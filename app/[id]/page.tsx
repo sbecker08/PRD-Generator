@@ -15,9 +15,11 @@ import {
   LayoutDashboard,
   Send,
   CheckCircle2,
+  ClipboardCheck,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import UserMenu from "../components/user-menu";
+import QuestionsPanel from "./questions-panel";
 
 type DbMessage = {
   id: string;
@@ -109,6 +111,16 @@ export default function RequestDetailPage() {
   const canApprove =
     requestData?.status === "PRD Generated" &&
     session?.user?.id === requestData?.created_by_user_id;
+
+  // Role checks for Q&A panel
+  const userRoles = (session?.user as { roles?: string[] })?.roles ?? [];
+  const isReviewer = userRoles.includes("IS Reviewer");
+  const isRequester = session?.user?.id === requestData?.created_by_user_id;
+
+  // Show Q&A panel for review-related statuses
+  const showQAPanel = requestData && [
+    "Business Approved", "IS Review", "Q&A Sent", "Epic Planning", "In Progress", "Complete"
+  ].includes(requestData.status);
 
   const handleApprove = async () => {
     if (!requestData || approving) return;
@@ -266,6 +278,15 @@ export default function RequestDetailPage() {
                 Download PRD
               </button>
             )}
+            {isReviewer && (
+              <Link
+                href="/review"
+                className="flex items-center gap-1.5 text-sm text-yellow-700 px-3 py-1.5 rounded-lg hover:bg-yellow-50 transition-colors"
+              >
+                <ClipboardCheck size={14} />
+                Review Queue
+              </Link>
+            )}
             <Link
               href="/"
               className="flex items-center gap-1.5 text-sm text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
@@ -351,6 +372,19 @@ export default function RequestDetailPage() {
 
           {isLoading && <TypingIndicator />}
 
+          {/* Q&A Panel for review-related statuses */}
+          {showQAPanel && (
+            <QuestionsPanel
+              requestId={id}
+              requestStatus={requestData.status}
+              isReviewer={isReviewer}
+              isRequester={isRequester}
+              onStatusChange={(newStatus) =>
+                setRequestData({ ...requestData, status: newStatus })
+              }
+            />
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </main>
@@ -398,10 +432,17 @@ export default function RequestDetailPage() {
       {!canChat && (
         <footer className="bg-gray-50 border-t border-gray-100 px-4 py-3 flex-shrink-0">
           <p className="max-w-3xl mx-auto text-xs text-gray-400 text-center">
-            This conversation is complete. Status:{" "}
-            <span className="font-medium text-gray-600">
-              {requestData.status}
-            </span>
+            {requestData.status === "Q&A Sent" && isRequester
+              ? "Please answer the reviewer's questions above."
+              : requestData.status === "IS Review" && isReviewer
+                ? "Review the PRD and add any clarifying questions, or mark the review as complete."
+                : requestData.status === "Business Approved" && isReviewer
+                  ? "This PRD is ready for your review. Add questions or mark as complete."
+                  : <>This conversation is complete. Status:{" "}
+                      <span className="font-medium text-gray-600">
+                        {requestData.status}
+                      </span>
+                    </>}
           </p>
         </footer>
       )}

@@ -12,7 +12,7 @@ The app has a solid foundation with auth and the full data model in place:
 - Admin panel for user/role management
 - Status transition engine enforcing valid lifecycle transitions
 
-**Not yet built:** intake classification, PRD approval, IS review/Q&A, epic breakdown, build tracking, change requests, reporting.
+**Not yet built:** epic breakdown, build tracking, change requests, reporting.
 
 ---
 
@@ -75,13 +75,13 @@ The app has a solid foundation with auth and the full data model in place:
 **Requirements:** REQ-008 through REQ-012, BR-003, BR-004
 **Goal:** Enable IS Reviewers to ask clarifying questions and business users to respond, in repeatable cycles.
 
-- [ ] IS Review queue page: list all requests in "Business Approved" or "Q&A Sent" status
-- [ ] Request review view: show the PRD and a panel to add questions (REQ-009)
-- [ ] Questions are draft/private until the reviewer clicks "Send to Requester" (BR-003, REQ-010)
-- [ ] Business requester sees questions and can provide answers inline (REQ-011)
-- [ ] After all questions are answered, IS Reviewer can either send more questions or mark review as complete (REQ-012, BR-004)
-- [ ] On review complete, transition status to "Epic Planning"
-- [ ] Full Q&A history visible on the request detail page (REQ-017)
+- [x] IS Review queue page: list all requests in "Business Approved" or "Q&A Sent" status
+- [x] Request review view: show the PRD and a panel to add questions (REQ-009)
+- [x] Questions are draft/private until the reviewer clicks "Send to Requester" (BR-003, REQ-010)
+- [x] Business requester sees questions and can provide answers inline (REQ-011)
+- [x] After all questions are answered, IS Reviewer can either send more questions or mark review as complete (REQ-012, BR-004)
+- [x] On review complete, transition status to "Epic Planning"
+- [x] Full Q&A history visible on the request detail page (REQ-017)
 
 ---
 

@@ -1,12 +1,18 @@
 import Link from "next/link";
-import { FileText, MessageSquare, Plus, Clock, ClipboardCheck } from "lucide-react";
+import {
+  FileText,
+  ClipboardCheck,
+  Clock,
+  MessageSquare,
+  LayoutDashboard,
+} from "lucide-react";
 import pool from "@/lib/db";
 import { STATUS_COLORS, type RequestStatus } from "@/lib/status";
 import { getCurrentUser, hasRole } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
-import UserMenu from "./components/user-menu";
+import UserMenu from "../components/user-menu";
 
-type RequestRow = {
+type ReviewRow = {
   id: string;
   title: string;
   status: RequestStatus;
@@ -14,16 +20,23 @@ type RequestRow = {
   application_name: string | null;
   created_at: string;
   updated_at: string;
-  message_count: number;
+  requester_name: string | null;
+  question_count: number;
+  unanswered_count: number;
 };
 
-async function getRequests(): Promise<RequestRow[]> {
-  const { rows } = await pool.query<RequestRow>(`
+async function getReviewQueue(): Promise<ReviewRow[]> {
+  const { rows } = await pool.query<ReviewRow>(`
     SELECT r.id, r.title, r.status, r.classification, r.application_name,
-           r.created_at, r.updated_at, COUNT(m.id)::int AS message_count
+           r.created_at, r.updated_at,
+           u.name AS requester_name,
+           COUNT(q.id)::int AS question_count,
+           COUNT(q.id) FILTER (WHERE q.sent_at IS NOT NULL AND q.answered_at IS NULL)::int AS unanswered_count
     FROM requests r
-    LEFT JOIN messages m ON m.request_id = r.id
-    GROUP BY r.id
+    LEFT JOIN users u ON u.id = r.created_by_user_id
+    LEFT JOIN questions q ON q.request_id = r.id
+    WHERE r.status IN ('Business Approved', 'IS Review', 'Q&A Sent')
+    GROUP BY r.id, u.name
     ORDER BY r.updated_at DESC
   `);
   return rows;
@@ -37,43 +50,37 @@ function formatDate(iso: string): string {
   });
 }
 
-export default async function DashboardPage() {
+export default async function ReviewQueuePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (!hasRole(user, "IS Reviewer")) redirect("/");
 
-  const requests = await getRequests();
+  const requests = await getReviewQueue();
 
   return (
     <div className="min-h-full" style={{ background: "var(--background)" }}>
       <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center shadow-sm">
-              <FileText size={18} className="text-white" />
+            <div className="w-9 h-9 rounded-xl bg-yellow-500 flex items-center justify-center shadow-sm">
+              <ClipboardCheck size={18} className="text-white" />
             </div>
             <div>
               <h1 className="text-base font-semibold text-gray-900 leading-tight">
-                Product Intake
+                IS Review Queue
               </h1>
-              <p className="text-xs text-gray-500 leading-tight">My Requests</p>
+              <p className="text-xs text-gray-500 leading-tight">
+                Requests awaiting review
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {hasRole(user, "IS Reviewer") && (
-              <Link
-                href="/review"
-                className="flex items-center gap-1.5 text-sm text-yellow-700 bg-yellow-50 px-3 py-1.5 rounded-lg hover:bg-yellow-100 transition-colors font-medium"
-              >
-                <ClipboardCheck size={14} />
-                Review Queue
-              </Link>
-            )}
             <Link
-              href="/chat"
-              className="flex items-center gap-1.5 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
+              href="/"
+              className="flex items-center gap-1.5 text-sm text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <Plus size={14} />
-              New Request
+              <LayoutDashboard size={14} />
+              Dashboard
             </Link>
             <UserMenu />
           </div>
@@ -84,23 +91,16 @@ export default async function DashboardPage() {
         <div className="max-w-3xl mx-auto">
           {requests.length === 0 ? (
             <div className="text-center py-20">
-              <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
-                <FileText size={28} className="text-primary-400" />
+              <div className="w-16 h-16 rounded-2xl bg-yellow-50 flex items-center justify-center mx-auto mb-4">
+                <ClipboardCheck size={28} className="text-yellow-400" />
               </div>
               <h2 className="text-lg font-semibold text-gray-700 mb-2">
-                No requests yet
+                No requests to review
               </h2>
               <p className="text-sm text-gray-400 mb-6">
-                Start a conversation with Product Intake to create your first product
-                requirements document.
+                Requests will appear here once a business requester approves
+                their PRD.
               </p>
-              <Link
-                href="/chat"
-                className="inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
-              >
-                <Plus size={14} />
-                Start a request
-              </Link>
             </div>
           ) : (
             <div className="space-y-3">
@@ -108,12 +108,12 @@ export default async function DashboardPage() {
                 <Link
                   key={req.id}
                   href={`/${req.id}`}
-                  className="block bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 hover:border-primary-200 hover:shadow-md transition-all group"
+                  className="block bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 hover:border-yellow-200 hover:shadow-md transition-all group"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-primary-100 transition-colors">
-                        <FileText size={14} className="text-primary-600" />
+                      <div className="w-8 h-8 rounded-lg bg-yellow-50 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-yellow-100 transition-colors">
+                        <FileText size={14} className="text-yellow-600" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
@@ -130,22 +130,36 @@ export default async function DashboardPage() {
                               {req.classification}
                             </span>
                           )}
+                          {req.unanswered_count > 0 && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                              {req.unanswered_count} unanswered
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-3 mt-1.5">
+                          {req.requester_name && (
+                            <span className="text-xs text-gray-400">
+                              By {req.requester_name}
+                            </span>
+                          )}
                           <span className="flex items-center gap-1 text-xs text-gray-400">
                             <Clock size={11} />
                             {formatDate(req.updated_at)}
                           </span>
-                          <span className="flex items-center gap-1 text-xs text-gray-400">
-                            <MessageSquare size={11} />
-                            {req.message_count}{" "}
-                            {req.message_count === 1 ? "message" : "messages"}
-                          </span>
+                          {req.question_count > 0 && (
+                            <span className="flex items-center gap-1 text-xs text-gray-400">
+                              <MessageSquare size={11} />
+                              {req.question_count}{" "}
+                              {req.question_count === 1
+                                ? "question"
+                                : "questions"}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <span className="text-xs text-primary-500 font-medium flex-shrink-0 mt-1 group-hover:text-primary-700 transition-colors">
-                      View →
+                    <span className="text-xs text-yellow-600 font-medium flex-shrink-0 mt-1 group-hover:text-yellow-700 transition-colors">
+                      Review →
                     </span>
                   </div>
                 </Link>

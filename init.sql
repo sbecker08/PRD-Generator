@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS requests (
   status request_status NOT NULL DEFAULT 'Draft',
   classification request_classification,
   application_name TEXT,
+  created_by_user_id UUID REFERENCES users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS status_history (
   request_id UUID NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
   from_status request_status,
   to_status request_status NOT NULL,
+  changed_by_user_id UUID REFERENCES users(id),
   changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

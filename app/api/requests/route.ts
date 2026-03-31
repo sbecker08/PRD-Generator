@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
 
   const { title }: { title: string } = await req.json();
   const { rows } = await pool.query<{ id: string }>(
-    "INSERT INTO requests (title, status) VALUES ($1, 'Draft') RETURNING id",
-    [title]
+    "INSERT INTO requests (title, status, created_by_user_id) VALUES ($1, 'Draft', $2) RETURNING id",
+    [title, user.id]
   );
 
   // Record initial status in history

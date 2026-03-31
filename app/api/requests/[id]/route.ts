@@ -17,6 +17,7 @@ export async function GET(
     status: string;
     classification: string | null;
     application_name: string | null;
+    created_by_user_id: string | null;
     created_at: string;
     updated_at: string;
   }>("SELECT * FROM requests WHERE id = $1", [id]);

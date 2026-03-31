@@ -14,7 +14,9 @@ import {
   Download,
   LayoutDashboard,
   Send,
+  CheckCircle2,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import UserMenu from "../components/user-menu";
 
 type DbMessage = {
@@ -30,6 +32,7 @@ type RequestDetail = {
   status: string;
   classification: string | null;
   application_name: string | null;
+  created_by_user_id: string | null;
   created_at: string;
   updated_at: string;
   messages: DbMessage[];
@@ -94,11 +97,36 @@ export default function RequestDetailPage() {
     null
   );
   const [input, setInput] = useState("");
+  const [approving, setApproving] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { data: session } = useSession();
 
   // Determine if this conversation can be continued (only Draft status)
   const canChat = requestData?.status === "Draft";
+
+  // Show approve button only when PRD is generated and current user is the original requester
+  const canApprove =
+    requestData?.status === "PRD Generated" &&
+    session?.user?.id === requestData?.created_by_user_id;
+
+  const handleApprove = async () => {
+    if (!requestData || approving) return;
+    setApproving(true);
+    try {
+      const res = await fetch(`/api/requests/${id}/approve`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to approve PRD");
+        return;
+      }
+      setRequestData({ ...requestData, status: "Business Approved" });
+    } catch {
+      alert("Failed to approve PRD");
+    } finally {
+      setApproving(false);
+    }
+  };
 
   // Fetch request data
   useEffect(() => {
@@ -213,6 +241,22 @@ export default function RequestDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {canApprove && (
+              <button
+                onClick={handleApprove}
+                disabled={approving}
+                className="flex items-center gap-1.5 text-sm bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
+              >
+                <CheckCircle2 size={14} />
+                {approving ? "Approving…" : "Approve PRD"}
+              </button>
+            )}
+            {requestData?.status === "Business Approved" && (
+              <span className="flex items-center gap-1.5 text-sm bg-green-100 text-green-700 px-3 py-1.5 rounded-lg font-medium">
+                <CheckCircle2 size={14} />
+                PRD Approved
+              </span>
+            )}
             {prdContent && (
               <button
                 onClick={() => downloadPrd(prdContent)}

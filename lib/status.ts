@@ -42,7 +42,8 @@ export function canTransition(
  */
 export async function transitionStatus(
   requestId: string,
-  toStatus: RequestStatus
+  toStatus: RequestStatus,
+  changedByUserId?: string
 ): Promise<RequestStatus> {
   const { rows } = await pool.query<{ status: RequestStatus }>(
     "SELECT status FROM requests WHERE id = $1",
@@ -67,8 +68,8 @@ export async function transitionStatus(
   );
 
   await pool.query(
-    `INSERT INTO status_history (request_id, from_status, to_status) VALUES ($1, $2, $3)`,
-    [requestId, fromStatus, toStatus]
+    `INSERT INTO status_history (request_id, from_status, to_status, changed_by_user_id) VALUES ($1, $2, $3, $4)`,
+    [requestId, fromStatus, toStatus, changedByUserId ?? null]
   );
 
   return toStatus;

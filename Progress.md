@@ -64,10 +64,10 @@ The app has a solid foundation with auth and the full data model in place:
 **Requirements:** REQ-006, REQ-007, BR-002
 **Goal:** Let the business requester formally approve the generated PRD.
 
-- [ ] After PRD is generated, show an "Approve PRD" button on the request detail page (visible only to the original requester)
-- [ ] On approval, transition status from "PRD Generated" to "Business Approved"
-- [ ] Record approval timestamp and approving user
-- [ ] Show approval status badge on the dashboard and detail pages
+- [x] After PRD is generated, show an "Approve PRD" button on the request detail page (visible only to the original requester)
+- [x] On approval, transition status from "PRD Generated" to "Business Approved"
+- [x] Record approval timestamp and approving user
+- [x] Show approval status badge on the dashboard and detail pages
 
 ---
 

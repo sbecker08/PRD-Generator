@@ -21,6 +21,7 @@ import { useSession } from "next-auth/react";
 import UserMenu from "../components/user-menu";
 import QuestionsPanel from "./questions-panel";
 import EpicsPanel from "./epics-panel";
+import TimelinePanel from "./timeline-panel";
 
 type DbMessage = {
   id: string;
@@ -127,6 +128,11 @@ export default function RequestDetailPage() {
   // Show epics panel for Epic Planning and beyond
   const showEpicsPanel = requestData && [
     "Epic Planning", "In Progress", "Complete"
+  ].includes(requestData.status);
+
+  // Show timeline for In Progress and Complete
+  const showTimeline = requestData && [
+    "In Progress", "Complete"
   ].includes(requestData.status);
 
   const handleApprove = async () => {
@@ -404,6 +410,11 @@ export default function RequestDetailPage() {
             />
           )}
 
+          {/* Timeline for In Progress and Complete */}
+          {showTimeline && (
+            <TimelinePanel requestId={id} />
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </main>
@@ -459,11 +470,15 @@ export default function RequestDetailPage() {
                   ? "This PRD is ready for your review. Add questions or mark as complete."
                   : requestData.status === "Epic Planning" && isEngineer
                     ? "Generate and refine the epic breakdown, then approve to begin development."
-                    : <>This conversation is complete. Status:{" "}
-                        <span className="font-medium text-gray-600">
-                          {requestData.status}
-                        </span>
-                      </>}
+                    : requestData.status === "In Progress" && isEngineer
+                      ? "Track build progress by updating epic statuses above."
+                      : requestData.status === "Complete"
+                        ? "This request has been completed."
+                        : <>This conversation is complete. Status:{" "}
+                            <span className="font-medium text-gray-600">
+                              {requestData.status}
+                            </span>
+                          </>}
           </p>
         </footer>
       )}

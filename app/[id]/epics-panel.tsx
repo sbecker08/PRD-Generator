@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Trophy,
 } from "lucide-react";
 
 type Epic = {
@@ -44,6 +45,8 @@ const EPIC_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   Complete: { bg: "bg-emerald-100", text: "text-emerald-700" },
 };
 
+const EPIC_STATUSES = ["Not Started", "In Progress", "Complete"] as const;
+
 export default function EpicsPanel({
   requestId,
   requestStatus,
@@ -51,10 +54,10 @@ export default function EpicsPanel({
   onStatusChange,
 }: EpicsPanelProps) {
   const [epics, setEpics] = useState<Epic[]>([]);
-  const [draftEpics, setDraftEpics] = useState<DraftEpic[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [completing, setCompleting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -62,8 +65,11 @@ export default function EpicsPanel({
   const [addingNew, setAddingNew] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   const isPlanning = requestStatus === "Epic Planning";
+  const isInProgress = requestStatus === "In Progress";
+  const canUpdateStatus = isEngineer && isInProgress;
 
   const fetchEpics = useCallback(async () => {
     try {
@@ -104,7 +110,6 @@ export default function EpicsPanel({
       }
 
       const data = await res.json();
-      // AI returns suggested epics — save them as draft epics in DB
       for (const epic of data.epics) {
         await fetch(`/api/requests/${requestId}/epics`, {
           method: "POST",
@@ -117,7 +122,6 @@ export default function EpicsPanel({
       }
 
       fetchEpics();
-      // Expand all to show generated content
       setExpandedIds(new Set(data.epics.map((_: unknown, i: number) => `expanded-${i}`)));
     } finally {
       setGenerating(false);
@@ -219,8 +223,52 @@ export default function EpicsPanel({
     }
   };
 
-  const allEpics = epics;
-  const completedCount = allEpics.filter((e) => e.status === "Complete").length;
+  const updateEpicStatus = async (epicId: string, newStatus: string) => {
+    setUpdatingStatusId(epicId);
+    try {
+      const res = await fetch(
+        `/api/requests/${requestId}/epics/${epicId}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+
+      if (res.ok) {
+        fetchEpics();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update epic status");
+      }
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
+  const markRequestComplete = async () => {
+    setCompleting(true);
+    try {
+      const res = await fetch(`/api/requests/${requestId}/complete`, {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        onStatusChange(data.status);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to mark request as complete");
+      }
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const completedCount = epics.filter((e) => e.status === "Complete").length;
+  const inProgressCount = epics.filter((e) => e.status === "In Progress").length;
+  const allComplete = epics.length > 0 && completedCount === epics.length;
+  const progressPercent = epics.length > 0 ? Math.round((completedCount / epics.length) * 100) : 0;
 
   if (loading) {
     return (
@@ -233,8 +281,7 @@ export default function EpicsPanel({
     );
   }
 
-  // Don't show panel if no epics and user can't create any
-  if (allEpics.length === 0 && !isPlanning) {
+  if (epics.length === 0 && !isPlanning) {
     return null;
   }
 
@@ -247,16 +294,16 @@ export default function EpicsPanel({
           <h3 className="text-sm font-semibold text-gray-700">
             Epic Breakdown
           </h3>
-          {allEpics.length > 0 && (
+          {epics.length > 0 && (
             <span className="text-xs text-gray-400">
-              ({completedCount} of {allEpics.length} complete)
+              ({completedCount} of {epics.length} complete)
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
           {isPlanning && isEngineer && (
             <>
-              {allEpics.length === 0 && (
+              {epics.length === 0 && (
                 <button
                   onClick={generateEpics}
                   disabled={generating}
@@ -266,7 +313,7 @@ export default function EpicsPanel({
                   {generating ? "Generating..." : "Generate Epics"}
                 </button>
               )}
-              {allEpics.length > 0 && (
+              {epics.length > 0 && (
                 <>
                   <button
                     onClick={generateEpics}
@@ -291,6 +338,33 @@ export default function EpicsPanel({
         </div>
       </div>
 
+      {/* Progress bar — shown when In Progress or Complete */}
+      {(isInProgress || requestStatus === "Complete") && epics.length > 0 && (
+        <div className="px-5 py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-gray-500 font-medium">
+              Build Progress
+            </span>
+            <span className="text-xs font-semibold text-gray-700">
+              {progressPercent}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-2">
+            <div
+              className={`h-2 rounded-full transition-all duration-500 ${
+                allComplete ? "bg-emerald-500" : "bg-indigo-500"
+              }`}
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <div className="flex items-center gap-4 mt-1.5 text-xs text-gray-400">
+            <span>{completedCount} complete</span>
+            <span>{inProgressCount} in progress</span>
+            <span>{epics.length - completedCount - inProgressCount} not started</span>
+          </div>
+        </div>
+      )}
+
       {/* Generating spinner */}
       {generating && (
         <div className="px-5 py-8 text-center">
@@ -304,10 +378,11 @@ export default function EpicsPanel({
       {/* Epic list */}
       {!generating && (
         <div className="divide-y divide-gray-50">
-          {allEpics.map((epic, index) => {
+          {epics.map((epic, index) => {
             const isExpanded = expandedIds.has(epic.id);
             const isEditing = editingId === epic.id;
             const colors = EPIC_STATUS_COLORS[epic.status] || EPIC_STATUS_COLORS["Not Started"];
+            const isUpdating = updatingStatusId === epic.id;
 
             return (
               <div key={epic.id} className="px-5 py-3">
@@ -366,11 +441,29 @@ export default function EpicsPanel({
                       <span className="text-sm font-medium text-gray-800 flex-1">
                         {epic.title}
                       </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${colors.bg} ${colors.text} font-medium`}
-                      >
-                        {epic.status}
-                      </span>
+
+                      {/* Status control — dropdown for IS Engineer during In Progress, badge otherwise */}
+                      {canUpdateStatus ? (
+                        <select
+                          value={epic.status}
+                          onChange={(e) => updateEpicStatus(epic.id, e.target.value)}
+                          disabled={isUpdating}
+                          className={`text-xs px-2 py-1 rounded-full border-0 font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400 ${colors.bg} ${colors.text} ${isUpdating ? "opacity-50" : ""}`}
+                        >
+                          {EPIC_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${colors.bg} ${colors.text} font-medium`}
+                        >
+                          {epic.status}
+                        </span>
+                      )}
+
                       {isPlanning && isEngineer && (
                         <>
                           <button
@@ -402,7 +495,7 @@ export default function EpicsPanel({
           })}
 
           {/* Empty state */}
-          {allEpics.length === 0 && !generating && (
+          {epics.length === 0 && !generating && (
             <div className="px-5 py-8 text-center">
               <Layers size={24} className="text-gray-300 mx-auto mb-2" />
               <p className="text-sm text-gray-400">
@@ -470,6 +563,28 @@ export default function EpicsPanel({
               Add epic manually
             </button>
           )}
+        </div>
+      )}
+
+      {/* Completion prompt — all epics complete, IS Engineer can mark request as Complete */}
+      {allComplete && isInProgress && isEngineer && (
+        <div className="px-5 py-4 bg-emerald-50 border-t border-emerald-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy size={16} className="text-emerald-600" />
+              <span className="text-sm font-medium text-emerald-700">
+                All epics are complete!
+              </span>
+            </div>
+            <button
+              onClick={markRequestComplete}
+              disabled={completing}
+              className="flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              <CheckCircle2 size={12} />
+              {completing ? "Completing..." : "Mark Request as Complete"}
+            </button>
+          </div>
         </div>
       )}
     </div>

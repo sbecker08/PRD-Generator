@@ -12,7 +12,7 @@ The app has a solid foundation with auth and the full data model in place:
 - Admin panel for user/role management
 - Status transition engine enforcing valid lifecycle transitions
 
-**Not yet built:** build tracking, change requests, reporting.
+**Not yet built:** change requests, reporting.
 
 ---
 
@@ -101,11 +101,11 @@ The app has a solid foundation with auth and the full data model in place:
 **Requirements:** REQ-016, REQ-017, REQ-018
 **Goal:** Track progress through the build phase at the epic level.
 
-- [ ] Request detail page: show epic list with current status (Not Started / In Progress / Complete)
-- [ ] IS Engineer can update individual epic statuses (REQ-018)
-- [ ] Show overall progress indicator (e.g., "3 of 7 epics complete")
-- [ ] Full request timeline view: conversation, PRD, Q&A, epics, all status changes with timestamps (REQ-017)
-- [ ] Determine completion: when all epics are marked Complete, prompt to mark request as Complete (open question #2 — default to explicit action)
+- [x] Request detail page: show epic list with current status (Not Started / In Progress / Complete)
+- [x] IS Engineer can update individual epic statuses (REQ-018)
+- [x] Show overall progress indicator (e.g., "3 of 7 epics complete")
+- [x] Full request timeline view: conversation, PRD, Q&A, epics, all status changes with timestamps (REQ-017)
+- [x] Determine completion: when all epics are marked Complete, prompt to mark request as Complete (open question #2 — default to explicit action)
 
 ---
 

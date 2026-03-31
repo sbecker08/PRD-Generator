@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Send, Download, FileText, RotateCcw, Bot, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
+import UserMenu from "../components/user-menu";
 
 // Initial static greeting shown before any API call
 const INITIAL_GREETING: UIMessage = {
@@ -176,6 +177,7 @@ export default function Home() {
               <LayoutDashboard size={14} />
               Dashboard
             </Link>
+            <UserMenu />
           </div>
         </div>
       </header>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { FileText, Bot, ArrowLeft, Download, LayoutDashboard } from "lucide-react";
+import UserMenu from "../components/user-menu";
 
 type Message = {
   id: string;
@@ -113,6 +114,7 @@ export default function RequestDetailPage() {
               <LayoutDashboard size={14} />
               Dashboard
             </Link>
+            <UserMenu />
           </div>
         </div>
       </header>

@@ -1,6 +1,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { convertToModelMessages, streamText, type UIMessage, type TextUIPart } from "ai";
 import pool from "@/lib/db";
+import { requireAuth } from "@/lib/auth-utils";
 
 export const maxDuration = 60;
 
@@ -141,6 +142,9 @@ Generate the PRD in markdown with these sections:
 *This document was created with Product Intake. Review with stakeholders before development begins.*`;
 
 export async function POST(req: Request) {
+  const user = await requireAuth();
+  if (user instanceof Response) return user;
+
   const { messages, requestId }: { messages: UIMessage[]; requestId?: string } =
     await req.json();
 

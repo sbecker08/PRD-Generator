@@ -1,7 +1,11 @@
 import { type NextRequest } from "next/server";
 import pool from "@/lib/db";
+import { requireAuth } from "@/lib/auth-utils";
 
 export async function GET() {
+  const user = await requireAuth();
+  if (user instanceof Response) return user;
+
   const { rows } = await pool.query<{
     id: string;
     title: string;
@@ -23,10 +27,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await requireAuth();
+  if (user instanceof Response) return user;
+
   const { title }: { title: string } = await req.json();
   const { rows } = await pool.query<{ id: string }>(
-    "INSERT INTO requests (title) VALUES ($1) RETURNING id",
-    [title]
+    "INSERT INTO requests (title, created_by) VALUES ($1, $2) RETURNING id",
+    [title, user.id]
   );
   return Response.json({ id: rows[0].id });
 }

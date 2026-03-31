@@ -2,14 +2,17 @@
 
 ## Current State
 
-The app has a basic foundation:
-- Next.js 16 + Tailwind CSS + PostgreSQL (`requests` and `messages` tables)
+The app has a solid foundation with auth and the full data model in place:
+- Next.js 16 + Tailwind CSS + PostgreSQL (full schema: requests, messages, users, user_roles, epics, epic_history, questions, change_requests, status_history)
 - AI chatbot intake conversation (Claude via Vercel AI SDK)
-- Dashboard listing all requests
+- Dashboard listing all requests with status and classification badges
 - Request detail page showing conversation history
 - PRD generation and markdown download
+- Microsoft Entra SSO authentication with role-based access control
+- Admin panel for user/role management
+- Status transition engine enforcing valid lifecycle transitions
 
-**Not yet built:** authentication, roles, request statuses, PRD approval, IS review/Q&A, epic breakdown, build tracking, change requests, admin features.
+**Not yet built:** intake classification, PRD approval, IS review/Q&A, epic breakdown, build tracking, change requests, reporting.
 
 ---
 
@@ -17,7 +20,7 @@ The app has a basic foundation:
 **Requirements:** REQ-016, REQ-017, BR-001 through BR-006
 **Goal:** Establish the full data model and status machine that all subsequent epics depend on.
 
-- [ ] Design and apply schema migrations:
+- [x] Design and apply schema migrations:
   - `requests` table: add `status` (enum: Draft, PRD Generated, Business Approved, IS Review, Q&A Sent, Epic Planning, In Progress, Complete), `classification` (New Application | Feature Enhancement), `application_name` (nullable, for enhancements)
   - `epics` table: `id`, `request_id`, `title`, `description`, `status` (Not Started | In Progress | Complete), `version`, `created_at`, `updated_at`
   - `epic_history` table: `id`, `epic_id`, `title`, `description`, `status`, `changed_at`, `change_reason`
@@ -25,9 +28,9 @@ The app has a basic foundation:
   - `change_requests` table: `id`, `request_id`, `conversation_history` (jsonb), `status`, `created_at`
   - `users` table: `id`, `entra_id`, `name`, `email`, `created_at`
   - `user_roles` table: `user_id`, `role` (Business Requester | IS Reviewer | IS Engineer | Admin)
-- [ ] Create a status transition helper that enforces valid transitions (BR-002, BR-005, BR-006)
-- [ ] Add status and classification columns to the dashboard list view
-- [ ] Add timestamps to all status changes for cycle time tracking
+- [x] Create a status transition helper that enforces valid transitions (BR-002, BR-005, BR-006)
+- [x] Add status and classification columns to the dashboard list view
+- [x] Add timestamps to all status changes for cycle time tracking
 
 ---
 
@@ -35,12 +38,12 @@ The app has a basic foundation:
 **Requirements:** REQ-023, REQ-024, REQ-025, BR-009, BR-010
 **Goal:** Secure the app with Microsoft Entra SSO and enforce role-based permissions.
 
-- [ ] Integrate Microsoft Entra SSO (NextAuth.js / Auth.js with Azure AD provider)
-- [ ] Create session middleware that attaches user + roles to every request
-- [ ] Protect all API routes — reject unauthenticated requests
-- [ ] Build role-checking utility: `hasRole(user, 'IS Reviewer')` etc.
-- [ ] Gate UI actions by role (e.g., only IS Reviewers see review actions)
-- [ ] Admin page: list users, assign/remove roles (REQ-023, REQ-024)
+- [x] Integrate Microsoft Entra SSO (NextAuth.js / Auth.js with Azure AD provider)
+- [x] Create session middleware that attaches user + roles to every request
+- [x] Protect all API routes — reject unauthenticated requests
+- [x] Build role-checking utility: `hasRole(user, 'IS Reviewer')` etc.
+- [x] Gate UI actions by role (e.g., only IS Reviewers see review actions)
+- [x] Admin page: list users, assign/remove roles (REQ-023, REQ-024)
 
 ---
 

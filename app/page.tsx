@@ -2,6 +2,9 @@ import Link from "next/link";
 import { FileText, MessageSquare, Plus, Clock } from "lucide-react";
 import pool from "@/lib/db";
 import { STATUS_COLORS, type RequestStatus } from "@/lib/status";
+import { getCurrentUser } from "@/lib/auth-utils";
+import { redirect } from "next/navigation";
+import UserMenu from "./components/user-menu";
 
 type RequestRow = {
   id: string;
@@ -35,6 +38,9 @@ function formatDate(iso: string): string {
 }
 
 export default async function DashboardPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
   const requests = await getRequests();
 
   return (
@@ -52,13 +58,16 @@ export default async function DashboardPage() {
               <p className="text-xs text-gray-500 leading-tight">My Requests</p>
             </div>
           </div>
-          <Link
-            href="/chat"
-            className="flex items-center gap-1.5 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
-          >
-            <Plus size={14} />
-            New Request
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/chat"
+              className="flex items-center gap-1.5 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
+            >
+              <Plus size={14} />
+              New Request
+            </Link>
+            <UserMenu />
+          </div>
         </div>
       </header>
 

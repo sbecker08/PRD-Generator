@@ -12,7 +12,7 @@ The app has a solid foundation with auth and the full data model in place:
 - Admin panel for user/role management
 - Status transition engine enforcing valid lifecycle transitions
 
-**Not yet built:** epic breakdown, build tracking, change requests, reporting.
+**Not yet built:** build tracking, change requests, reporting.
 
 ---
 
@@ -89,11 +89,11 @@ The app has a solid foundation with auth and the full data model in place:
 **Requirements:** REQ-013, REQ-014, REQ-015, BR-005, BR-006
 **Goal:** Generate and refine buildable epics from the approved PRD.
 
-- [ ] When a request reaches "Epic Planning" status, provide a "Generate Epics" button (IS Engineer only)
-- [ ] Call AI to break the PRD into suggested epics with titles and descriptions (REQ-013)
-- [ ] Display epics in an editable list — IS Engineer can edit titles/descriptions, add new epics, remove epics (REQ-014)
-- [ ] "Approve Epic Breakdown" button finalizes the epics and transitions status to "In Progress" (REQ-015, BR-006)
-- [ ] Save approved epics to the `epics` table with initial status "Not Started"
+- [x] When a request reaches "Epic Planning" status, provide a "Generate Epics" button (IS Engineer only)
+- [x] Call AI to break the PRD into suggested epics with titles and descriptions (REQ-013)
+- [x] Display epics in an editable list — IS Engineer can edit titles/descriptions, add new epics, remove epics (REQ-014)
+- [x] "Approve Epic Breakdown" button finalizes the epics and transitions status to "In Progress" (REQ-015, BR-006)
+- [x] Save approved epics to the `epics` table with initial status "Not Started"
 
 ---
 

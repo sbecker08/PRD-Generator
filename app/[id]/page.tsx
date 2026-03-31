@@ -20,6 +20,7 @@ import {
 import { useSession } from "next-auth/react";
 import UserMenu from "../components/user-menu";
 import QuestionsPanel from "./questions-panel";
+import EpicsPanel from "./epics-panel";
 
 type DbMessage = {
   id: string;
@@ -115,11 +116,17 @@ export default function RequestDetailPage() {
   // Role checks for Q&A panel
   const userRoles = (session?.user as { roles?: string[] })?.roles ?? [];
   const isReviewer = userRoles.includes("IS Reviewer");
+  const isEngineer = userRoles.includes("IS Engineer");
   const isRequester = session?.user?.id === requestData?.created_by_user_id;
 
   // Show Q&A panel for review-related statuses
   const showQAPanel = requestData && [
     "Business Approved", "IS Review", "Q&A Sent", "Epic Planning", "In Progress", "Complete"
+  ].includes(requestData.status);
+
+  // Show epics panel for Epic Planning and beyond
+  const showEpicsPanel = requestData && [
+    "Epic Planning", "In Progress", "Complete"
   ].includes(requestData.status);
 
   const handleApprove = async () => {
@@ -385,6 +392,18 @@ export default function RequestDetailPage() {
             />
           )}
 
+          {/* Epics Panel for Epic Planning and beyond */}
+          {showEpicsPanel && (
+            <EpicsPanel
+              requestId={id}
+              requestStatus={requestData.status}
+              isEngineer={isEngineer}
+              onStatusChange={(newStatus) =>
+                setRequestData({ ...requestData, status: newStatus })
+              }
+            />
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </main>
@@ -438,11 +457,13 @@ export default function RequestDetailPage() {
                 ? "Review the PRD and add any clarifying questions, or mark the review as complete."
                 : requestData.status === "Business Approved" && isReviewer
                   ? "This PRD is ready for your review. Add questions or mark as complete."
-                  : <>This conversation is complete. Status:{" "}
-                      <span className="font-medium text-gray-600">
-                        {requestData.status}
-                      </span>
-                    </>}
+                  : requestData.status === "Epic Planning" && isEngineer
+                    ? "Generate and refine the epic breakdown, then approve to begin development."
+                    : <>This conversation is complete. Status:{" "}
+                        <span className="font-medium text-gray-600">
+                          {requestData.status}
+                        </span>
+                      </>}
           </p>
         </footer>
       )}

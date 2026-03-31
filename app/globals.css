@@ -9,9 +9,6 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-}
-
-@theme {
   --color-primary-50: #e6edf5;
   --color-primary-100: #ccdaeb;
   --color-primary-200: #99b5d6;

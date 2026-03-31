@@ -8,7 +8,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "PRD Bot — Product Requirements Assistant",
+  title: "Product Intake — Product Requirements Assistant",
   description:
     "An AI-powered assistant that helps you build comprehensive product requirements documents through guided conversation.",
 };

@@ -5,11 +5,15 @@ export async function GET() {
   const { rows } = await pool.query<{
     id: string;
     title: string;
+    status: string;
+    classification: string | null;
+    application_name: string | null;
     created_at: string;
     updated_at: string;
     message_count: string;
   }>(`
-    SELECT r.id, r.title, r.created_at, r.updated_at, COUNT(m.id)::int AS message_count
+    SELECT r.id, r.title, r.status, r.classification, r.application_name,
+           r.created_at, r.updated_at, COUNT(m.id)::int AS message_count
     FROM requests r
     LEFT JOIN messages m ON m.request_id = r.id
     GROUP BY r.id

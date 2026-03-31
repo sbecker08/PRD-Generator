@@ -1,8 +1,41 @@
 -- =============================================
--- IS Intake Assistant — Full Schema
+-- Migration: Add Epic 1 schema to existing database
+-- Run this against an existing database that only has
+-- the original requests + messages tables.
 -- =============================================
 
--- Users
+-- 1. New enum types
+DO $$ BEGIN
+  CREATE TYPE request_status AS ENUM (
+    'Draft', 'PRD Generated', 'Business Approved', 'IS Review',
+    'Q&A Sent', 'Epic Planning', 'In Progress', 'Complete'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE request_classification AS ENUM (
+    'New Application', 'Feature Enhancement'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE epic_status AS ENUM ('Not Started', 'In Progress', 'Complete');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE change_request_status AS ENUM ('Draft', 'Submitted', 'Approved', 'Applied');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 2. Add columns to requests table
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS status request_status NOT NULL DEFAULT 'Draft';
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS classification request_classification;
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS application_name TEXT;
+
+-- 3. New tables
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   entra_id TEXT UNIQUE,
@@ -11,58 +44,12 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- User roles
 CREATE TABLE IF NOT EXISTS user_roles (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role TEXT NOT NULL CHECK (role IN ('Business Requester', 'IS Reviewer', 'IS Engineer', 'Admin')),
   PRIMARY KEY (user_id, role)
 );
 
--- Request status enum
-DO $$ BEGIN
-  CREATE TYPE request_status AS ENUM (
-    'Draft',
-    'PRD Generated',
-    'Business Approved',
-    'IS Review',
-    'Q&A Sent',
-    'Epic Planning',
-    'In Progress',
-    'Complete'
-  );
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
--- Request classification enum
-DO $$ BEGIN
-  CREATE TYPE request_classification AS ENUM (
-    'New Application',
-    'Feature Enhancement'
-  );
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
--- Requests
-CREATE TABLE IF NOT EXISTS requests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  status request_status NOT NULL DEFAULT 'Draft',
-  classification request_classification,
-  application_name TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Messages (chat history)
-CREATE TABLE IF NOT EXISTS messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  request_id UUID NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
-  role TEXT NOT NULL,
-  content TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Status change history for cycle time tracking
 CREATE TABLE IF NOT EXISTS status_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id UUID NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
@@ -70,12 +57,6 @@ CREATE TABLE IF NOT EXISTS status_history (
   to_status request_status NOT NULL,
   changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
--- Epics
-DO $$ BEGIN
-  CREATE TYPE epic_status AS ENUM ('Not Started', 'In Progress', 'Complete');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
 
 CREATE TABLE IF NOT EXISTS epics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -88,7 +69,6 @@ CREATE TABLE IF NOT EXISTS epics (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Epic history (for change request tracking)
 CREATE TABLE IF NOT EXISTS epic_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   epic_id UUID NOT NULL REFERENCES epics(id) ON DELETE CASCADE,
@@ -99,7 +79,6 @@ CREATE TABLE IF NOT EXISTS epic_history (
   change_reason TEXT
 );
 
--- Questions (IS Review Q&A)
 CREATE TABLE IF NOT EXISTS questions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id UUID NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
@@ -110,12 +89,6 @@ CREATE TABLE IF NOT EXISTS questions (
   answered_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
--- Change requests
-DO $$ BEGIN
-  CREATE TYPE change_request_status AS ENUM ('Draft', 'Submitted', 'Approved', 'Applied');
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
 
 CREATE TABLE IF NOT EXISTS change_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

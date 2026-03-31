@@ -65,7 +65,7 @@ export default function RequestDetailPage() {
       <div className="min-h-full flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 mb-4">Request not found.</p>
-          <Link href="/dashboard" className="text-indigo-600 hover:underline text-sm">
+          <Link href="/" className="text-primary-600 hover:underline text-sm">
             Back to dashboard
           </Link>
         </div>
@@ -76,7 +76,7 @@ export default function RequestDetailPage() {
   if (!data) {
     return (
       <div className="min-h-full flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -86,28 +86,28 @@ export default function RequestDetailPage() {
       <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm flex-shrink-0">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center shadow-sm">
               <FileText size={18} className="text-white" />
             </div>
             <div className="min-w-0">
               <h1 className="text-base font-semibold text-gray-900 leading-tight truncate max-w-xs">
                 {data.title}
               </h1>
-              <p className="text-xs text-gray-500 leading-tight">PRD Bot</p>
+              <p className="text-xs text-gray-500 leading-tight">Product Intake</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {prdMessage && (
               <button
                 onClick={() => downloadPrd(prdMessage.content)}
-                className="flex items-center gap-1.5 text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm"
+                className="flex items-center gap-1.5 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
               >
                 <Download size={14} />
                 Download PRD
               </button>
             )}
             <Link
-              href="/dashboard"
+              href="/"
               className="flex items-center gap-1.5 text-sm text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <LayoutDashboard size={14} />
@@ -139,7 +139,7 @@ export default function RequestDetailPage() {
                 className={`flex items-start gap-3 mb-5 ${isUser ? "flex-row-reverse" : "flex-row"}`}
               >
                 {!isUser && (
-                  <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                  <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
                     <Bot size={15} className="text-white" />
                   </div>
                 )}
@@ -147,9 +147,9 @@ export default function RequestDetailPage() {
                 <div
                   className={`rounded-2xl px-4 py-3 ${
                     isUser
-                      ? "max-w-[80%] bg-indigo-600 text-white rounded-tr-sm shadow-sm"
+                      ? "max-w-[80%] bg-primary-600 text-white rounded-tr-sm shadow-sm"
                       : containsPrd
-                        ? "w-full bg-white text-gray-800 rounded-tl-sm shadow-md border border-indigo-100"
+                        ? "w-full bg-white text-gray-800 rounded-tl-sm shadow-md border border-primary-100"
                         : "max-w-[85%] bg-white text-gray-800 rounded-tl-sm shadow-sm border border-gray-100"
                   }`}
                 >
@@ -168,7 +168,7 @@ export default function RequestDetailPage() {
                   {containsPrd && (
                     <button
                       onClick={() => downloadPrd(message.content)}
-                      className="mt-4 flex items-center gap-2 text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-lg hover:bg-indigo-100 transition-colors font-medium"
+                      className="mt-4 flex items-center gap-2 text-xs bg-secondary-50 text-secondary-700 border border-secondary-200 px-3 py-2 rounded-lg hover:bg-secondary-100 transition-colors font-medium"
                     >
                       <Download size={12} />
                       Download as Markdown file

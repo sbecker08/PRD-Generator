@@ -10,6 +10,9 @@ export async function GET(
   const requestResult = await pool.query<{
     id: string;
     title: string;
+    status: string;
+    classification: string | null;
+    application_name: string | null;
     created_at: string;
     updated_at: string;
   }>("SELECT * FROM requests WHERE id = $1", [id]);

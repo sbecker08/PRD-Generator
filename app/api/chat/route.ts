@@ -4,7 +4,7 @@ import pool from "@/lib/db";
 
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You are PRD-Bot, a friendly and expert product requirements specialist. Your role is to help business teams capture their product ideas and turn them into clear, actionable requirements that a development team can use to build the product.
+const SYSTEM_PROMPT = `You are Product Intake, a friendly and expert product requirements specialist. Your role is to help business teams capture their product ideas and turn them into clear, actionable requirements that a development team can use to build the product.
 
 ## Your Approach
 - Ask ONE focused question at a time — never multiple questions in a single message
@@ -138,7 +138,7 @@ Generate the PRD in markdown with these sections:
 1. [Assumption made in writing these requirements]
 
 ---
-*This document was created with PRD-Bot. Review with stakeholders before development begins.*`;
+*This document was created with Product Intake. Review with stakeholders before development begins.*`;
 
 export async function POST(req: Request) {
   const { messages, requestId }: { messages: UIMessage[]; requestId?: string } =

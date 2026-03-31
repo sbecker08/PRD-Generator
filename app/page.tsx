@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, MessageSquare, Plus, Clock, ClipboardCheck } from "lucide-react";
+import { FileText, MessageSquare, Plus, Clock, ClipboardCheck, BarChart3 } from "lucide-react";
 import pool from "@/lib/db";
 import { STATUS_COLORS, type RequestStatus } from "@/lib/status";
 import { getCurrentUser, hasRole } from "@/lib/auth-utils";
@@ -59,6 +59,13 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              href="/reporting"
+              className="flex items-center gap-1.5 text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+            >
+              <BarChart3 size={14} />
+              Reporting
+            </Link>
             {hasRole(user, "IS Reviewer") && (
               <Link
                 href="/review"

@@ -12,7 +12,7 @@ The app has a solid foundation with auth and the full data model in place:
 - Admin panel for user/role management
 - Status transition engine enforcing valid lifecycle transitions
 
-**Not yet built:** reporting.
+**Not yet built:** polish & non-functional requirements (Epic 10).
 
 ---
 
@@ -128,11 +128,11 @@ The app has a solid foundation with auth and the full data model in place:
 **Requirements:** REQ-016, Section 7 (Data & Reporting)
 **Goal:** Provide visibility into request pipeline and cycle times.
 
-- [ ] Status overview dashboard: requests grouped/filterable by current status
-- [ ] Cycle time metrics: time spent in each status, total intake-to-completion time
-- [ ] Epic progress summary per request
-- [ ] Filter/sort by requester, date, classification, status
-- [ ] Individual request detail view consolidating full history (already partially built — enhance)
+- [x] Status overview dashboard: requests grouped/filterable by current status
+- [x] Cycle time metrics: time spent in each status, total intake-to-completion time
+- [x] Epic progress summary per request
+- [x] Filter/sort by requester, date, classification, status
+- [x] Individual request detail view consolidating full history (already partially built — enhance)
 
 ---
 

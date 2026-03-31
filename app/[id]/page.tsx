@@ -22,6 +22,7 @@ import UserMenu from "../components/user-menu";
 import QuestionsPanel from "./questions-panel";
 import EpicsPanel from "./epics-panel";
 import TimelinePanel from "./timeline-panel";
+import ChangeRequestsPanel from "./change-requests-panel";
 
 type DbMessage = {
   id: string;
@@ -102,6 +103,7 @@ export default function RequestDetailPage() {
   );
   const [input, setInput] = useState("");
   const [approving, setApproving] = useState(false);
+  const [epicsKey, setEpicsKey] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { data: session } = useSession();
@@ -128,6 +130,11 @@ export default function RequestDetailPage() {
   // Show epics panel for Epic Planning and beyond
   const showEpicsPanel = requestData && [
     "Epic Planning", "In Progress", "Complete"
+  ].includes(requestData.status);
+
+  // Show change requests panel for In Progress and Complete
+  const showChangeRequests = requestData && [
+    "In Progress", "Complete"
   ].includes(requestData.status);
 
   // Show timeline for In Progress and Complete
@@ -401,12 +408,24 @@ export default function RequestDetailPage() {
           {/* Epics Panel for Epic Planning and beyond */}
           {showEpicsPanel && (
             <EpicsPanel
+              key={epicsKey}
               requestId={id}
               requestStatus={requestData.status}
               isEngineer={isEngineer}
               onStatusChange={(newStatus) =>
                 setRequestData({ ...requestData, status: newStatus })
               }
+            />
+          )}
+
+          {/* Change Requests Panel for In Progress and Complete */}
+          {showChangeRequests && (
+            <ChangeRequestsPanel
+              requestId={id}
+              requestStatus={requestData.status}
+              isRequester={isRequester}
+              isEngineer={isEngineer}
+              onEpicsChanged={() => setEpicsKey((k) => k + 1)}
             />
           )}
 

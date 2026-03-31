@@ -12,7 +12,7 @@ The app has a solid foundation with auth and the full data model in place:
 - Admin panel for user/role management
 - Status transition engine enforcing valid lifecycle transitions
 
-**Not yet built:** change requests, reporting.
+**Not yet built:** reporting.
 
 ---
 
@@ -113,14 +113,14 @@ The app has a solid foundation with auth and the full data model in place:
 **Requirements:** REQ-019 through REQ-022, BR-007, BR-008, BR-012
 **Goal:** Support mid-build requirement changes with intelligent epic impact handling.
 
-- [ ] "Submit Change Request" button on in-progress requests (Business Requester only)
-- [ ] Change request follows guided conversation flow similar to original intake (REQ-020)
-- [ ] Change request goes through its own approval cycle
-- [ ] AI analyzes which epics are impacted by the change
-- [ ] For "Not Started" epics: fold changes into existing epic, preserve original content in `epic_history` (BR-007)
-- [ ] For "In Progress" or "Complete" epics: create new epics for the changed behavior (BR-008)
-- [ ] No limit on number of change requests per project (BR-012)
-- [ ] Change request history visible on the request detail page
+- [x] "Submit Change Request" button on in-progress requests (Business Requester only)
+- [x] Change request follows guided conversation flow similar to original intake (REQ-020)
+- [x] Change request goes through its own approval cycle
+- [x] AI analyzes which epics are impacted by the change
+- [x] For "Not Started" epics: fold changes into existing epic, preserve original content in `epic_history` (BR-007)
+- [x] For "In Progress" or "Complete" epics: create new epics for the changed behavior (BR-008)
+- [x] No limit on number of change requests per project (BR-012)
+- [x] Change request history visible on the request detail page
 
 ---
 

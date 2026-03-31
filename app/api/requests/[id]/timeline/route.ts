@@ -22,7 +22,7 @@ export async function GET(
   }
 
   // Fetch all timeline events in parallel
-  const [statusHistory, epicHistory, questions, messages] = await Promise.all([
+  const [statusHistory, epicHistory, questions, messages, changeRequests] = await Promise.all([
     pool.query(
       `SELECT sh.id, sh.from_status, sh.to_status, sh.changed_at as timestamp,
               COALESCE(u.name, 'System') as actor_name
@@ -55,6 +55,15 @@ export async function GET(
        FROM messages
        WHERE request_id = $1
        ORDER BY created_at`,
+      [id]
+    ),
+    pool.query(
+      `SELECT cr.id, cr.status, cr.created_at, cr.updated_at,
+              COALESCE(u.name, 'Unknown') as created_by_name
+       FROM change_requests cr
+       LEFT JOIN users u ON cr.created_by_user_id = u.id
+       WHERE cr.request_id = $1
+       ORDER BY cr.created_at`,
       [id]
     ),
   ]);
@@ -126,6 +135,29 @@ export async function GET(
         preview: row.content_preview,
       },
     });
+  }
+
+  for (const row of changeRequests.rows) {
+    events.push({
+      id: `cr-${row.id}`,
+      type: "change_request",
+      timestamp: row.created_at,
+      data: {
+        status: row.status,
+        createdBy: row.created_by_name,
+      },
+    });
+    // Add applied event if status is Applied
+    if (row.status === "Applied" && row.updated_at !== row.created_at) {
+      events.push({
+        id: `cr-applied-${row.id}`,
+        type: "change_request_applied",
+        timestamp: row.updated_at,
+        data: {
+          createdBy: row.created_by_name,
+        },
+      });
+    }
   }
 
   // Sort by timestamp

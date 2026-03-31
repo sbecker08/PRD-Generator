@@ -10,11 +10,13 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
+  RefreshCw,
+  Zap,
 } from "lucide-react";
 
 type TimelineEvent = {
   id: string;
-  type: "status_change" | "epic_update" | "question_sent" | "question_answered" | "message";
+  type: "status_change" | "epic_update" | "question_sent" | "question_answered" | "message" | "change_request" | "change_request_applied";
   timestamp: string;
   data: Record<string, unknown>;
 };
@@ -29,6 +31,8 @@ const EVENT_ICONS: Record<string, { icon: typeof Clock; color: string }> = {
   question_sent: { icon: HelpCircle, color: "text-yellow-500" },
   question_answered: { icon: CheckCircle2, color: "text-green-500" },
   message: { icon: MessageSquare, color: "text-gray-400" },
+  change_request: { icon: RefreshCw, color: "text-amber-500" },
+  change_request_applied: { icon: Zap, color: "text-green-500" },
 };
 
 function formatTimestamp(ts: string): string {
@@ -98,6 +102,20 @@ function EventDescription({ event }: { event: TimelineEvent }) {
           </span>
         </span>
       );
+    case "change_request":
+      return (
+        <span>
+          Change request submitted by{" "}
+          <span className="font-medium">{data.createdBy as string}</span>
+          {" "}— Status: <span className="font-medium">{data.status as string}</span>
+        </span>
+      );
+    case "change_request_applied":
+      return (
+        <span>
+          Change request applied — epics updated based on impact analysis
+        </span>
+      );
     default:
       return <span>Unknown event</span>;
   }
@@ -128,7 +146,9 @@ export default function TimelinePanel({ requestId }: TimelinePanelProps) {
   const filteredEvents =
     filter === "all"
       ? events
-      : events.filter((e) => e.type === filter);
+      : filter === "change_request"
+        ? events.filter((e) => e.type === "change_request" || e.type === "change_request_applied")
+        : events.filter((e) => e.type === filter);
 
   // Show only the last 5 events when collapsed
   const displayEvents = expanded ? filteredEvents : filteredEvents.slice(-5);
@@ -170,6 +190,7 @@ export default function TimelinePanel({ requestId }: TimelinePanelProps) {
             <option value="epic_update">Epic updates</option>
             <option value="question_sent">Questions</option>
             <option value="message">Messages</option>
+            <option value="change_request">Change Requests</option>
           </select>
         </div>
       </div>

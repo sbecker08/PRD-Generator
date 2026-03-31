@@ -188,6 +188,8 @@ export default function Home() {
           {messages.map((message) => {
             const isUser = message.role === "user";
             const text = getTextFromMessage(message);
+            // Strip hidden classification markers from display
+            const displayText = text.replace(/<!-- CLASSIFICATION:.*?-->/g, "").trim();
             const containsPrd = !isUser && hasPrd(text);
 
             return (
@@ -214,12 +216,12 @@ export default function Home() {
                 >
                   {isUser ? (
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {text}
+                      {displayText}
                     </p>
                   ) : (
                     <div className="text-sm prose-chat">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {text}
+                        {displayText}
                       </ReactMarkdown>
                     </div>
                   )}

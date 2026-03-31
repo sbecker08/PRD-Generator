@@ -51,12 +51,12 @@ The app has a solid foundation with auth and the full data model in place:
 **Requirements:** REQ-001 through REQ-005, BR-001, BR-011
 **Goal:** Complete the guided intake experience with classification, auto-save, and resume.
 
-- [ ] Update chatbot system prompt to classify requests as New Application or Feature Enhancement during conversation (BR-001)
-- [ ] When classified as Feature Enhancement, prompt user to identify which application (REQ-004)
-- [ ] Persist classification and application name to the `requests` table
-- [ ] Ensure every user message + assistant response is saved immediately (REQ-005, BR-011) — already partially implemented, verify completeness
-- [ ] Allow users to resume an in-progress conversation by navigating to the request detail page and continuing to chat
-- [ ] Set request status to "Draft" on creation, auto-advance to "PRD Generated" when PRD is produced
+- [x] Update chatbot system prompt to classify requests as New Application or Feature Enhancement during conversation (BR-001)
+- [x] When classified as Feature Enhancement, prompt user to identify which application (REQ-004)
+- [x] Persist classification and application name to the `requests` table
+- [x] Ensure every user message + assistant response is saved immediately (REQ-005, BR-011) — already partially implemented, verify completeness
+- [x] Allow users to resume an in-progress conversation by navigating to the request detail page and continuing to chat
+- [x] Set request status to "Draft" on creation, auto-advance to "PRD Generated" when PRD is produced
 
 ---
 

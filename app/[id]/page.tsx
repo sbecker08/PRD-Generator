@@ -1,14 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useChat } from "@ai-sdk/react";
+import type { UIMessage, TextUIPart } from "ai";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { FileText, Bot, ArrowLeft, Download, LayoutDashboard } from "lucide-react";
+import {
+  FileText,
+  Bot,
+  ArrowLeft,
+  Download,
+  LayoutDashboard,
+  Send,
+} from "lucide-react";
 import UserMenu from "../components/user-menu";
 
-type Message = {
+type DbMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -18,9 +27,12 @@ type Message = {
 type RequestDetail = {
   id: string;
   title: string;
+  status: string;
+  classification: string | null;
+  application_name: string | null;
   created_at: string;
   updated_at: string;
-  messages: Message[];
+  messages: DbMessage[];
 };
 
 function hasPrd(text: string): boolean {
@@ -28,6 +40,13 @@ function hasPrd(text: string): boolean {
     text.includes("# Product Requirements Document") ||
     text.includes("## 1. Executive Summary")
   );
+}
+
+function getTextFromMessage(message: UIMessage): string {
+  return message.parts
+    .filter((p): p is TextUIPart => p.type === "text")
+    .map((p) => p.text)
+    .join("");
 }
 
 function downloadPrd(content: string) {
@@ -40,26 +59,106 @@ function downloadPrd(content: string) {
   URL.revokeObjectURL(url);
 }
 
+/** Convert DB messages to UIMessage format for useChat */
+function toUIMessages(dbMessages: DbMessage[]): UIMessage[] {
+  return dbMessages.map((m) => ({
+    id: m.id,
+    role: m.role,
+    parts: [{ type: "text" as const, text: m.content }],
+  }));
+}
+
+function TypingIndicator() {
+  return (
+    <div className="flex items-start gap-3 mb-4">
+      <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+        <Bot size={15} className="text-white" />
+      </div>
+      <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-gray-100">
+        <div className="flex items-center gap-1.5 h-5">
+          <div className="w-2 h-2 rounded-full bg-primary-400 dot-1" />
+          <div className="w-2 h-2 rounded-full bg-primary-400 dot-2" />
+          <div className="w-2 h-2 rounded-full bg-primary-400 dot-3" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RequestDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [data, setData] = useState<RequestDetail | null>(null);
+  const [requestData, setRequestData] = useState<RequestDetail | null>(null);
   const [error, setError] = useState(false);
+  const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(
+    null
+  );
+  const [input, setInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Determine if this conversation can be continued (only Draft status)
+  const canChat = requestData?.status === "Draft";
+
+  // Fetch request data
   useEffect(() => {
     fetch(`/api/requests/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Not found");
         return res.json();
       })
-      .then(setData)
+      .then((data: RequestDetail) => {
+        setRequestData(data);
+        setInitialMessages(toUIMessages(data.messages));
+      })
       .catch(() => setError(true));
   }, [id]);
 
-  const prdMessage = data?.messages
+  const { messages, sendMessage, status: chatStatus } = useChat({
+    messages: initialMessages ?? [],
+  });
+
+  const isLoading = chatStatus === "submitted" || chatStatus === "streaming";
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
+
+  // Auto-resize textarea
+  const adjustTextarea = useCallback(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = Math.min(el.scrollHeight, 160) + "px";
+    }
+  }, []);
+
+  useEffect(() => {
+    adjustTextarea();
+  }, [input, adjustTextarea]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed || isLoading || !canChat) return;
+    setInput("");
+    sendMessage({ text: trimmed }, { body: { requestId: id } });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e as unknown as React.FormEvent);
+    }
+  };
+
+  // Find PRD in messages
+  const prdText = messages
     .slice()
     .reverse()
-    .find((m) => m.role === "assistant" && hasPrd(m.content));
+    .find((m) => m.role === "assistant" && hasPrd(getTextFromMessage(m)));
+  const prdContent = prdText ? getTextFromMessage(prdText) : null;
 
   if (error) {
     return (
@@ -74,7 +173,7 @@ export default function RequestDetailPage() {
     );
   }
 
-  if (!data) {
+  if (!requestData || initialMessages === null) {
     return (
       <div className="min-h-full flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
@@ -83,7 +182,11 @@ export default function RequestDetailPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-full" style={{ background: "var(--background)" }}>
+    <div
+      className="flex flex-col h-full"
+      style={{ background: "var(--background)" }}
+    >
+      {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm flex-shrink-0">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -92,15 +195,27 @@ export default function RequestDetailPage() {
             </div>
             <div className="min-w-0">
               <h1 className="text-base font-semibold text-gray-900 leading-tight truncate max-w-xs">
-                {data.title}
+                {requestData.title}
               </h1>
-              <p className="text-xs text-gray-500 leading-tight">Product Intake</p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-gray-500 leading-tight">
+                  Product Intake
+                </p>
+                <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                  {requestData.status}
+                </span>
+                {requestData.classification && (
+                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                    {requestData.classification}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {prdMessage && (
+            {prdContent && (
               <button
-                onClick={() => downloadPrd(prdMessage.content)}
+                onClick={() => downloadPrd(prdContent)}
                 className="flex items-center gap-1.5 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
               >
                 <Download size={14} />
@@ -119,7 +234,8 @@ export default function RequestDetailPage() {
         </div>
       </header>
 
-      <main className="flex-1 px-4 py-6">
+      {/* Messages */}
+      <main className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-3xl mx-auto">
           <div className="mb-4">
             <button
@@ -131,9 +247,15 @@ export default function RequestDetailPage() {
             </button>
           </div>
 
-          {data.messages.map((message) => {
+          {messages.map((message) => {
             const isUser = message.role === "user";
-            const containsPrd = !isUser && hasPrd(message.content);
+            const text = getTextFromMessage(message);
+            // Strip hidden classification markers from display
+            const displayText = text.replace(
+              /<!-- CLASSIFICATION:.*?-->/g,
+              ""
+            ).trim();
+            const containsPrd = !isUser && hasPrd(text);
 
             return (
               <div
@@ -157,19 +279,19 @@ export default function RequestDetailPage() {
                 >
                   {isUser ? (
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {message.content}
+                      {displayText}
                     </p>
                   ) : (
                     <div className="text-sm prose-chat">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.content}
+                        {displayText}
                       </ReactMarkdown>
                     </div>
                   )}
 
                   {containsPrd && (
                     <button
-                      onClick={() => downloadPrd(message.content)}
+                      onClick={() => downloadPrd(text)}
                       className="mt-4 flex items-center gap-2 text-xs bg-secondary-50 text-secondary-700 border border-secondary-200 px-3 py-2 rounded-lg hover:bg-secondary-100 transition-colors font-medium"
                     >
                       <Download size={12} />
@@ -182,8 +304,63 @@ export default function RequestDetailPage() {
               </div>
             );
           })}
+
+          {isLoading && <TypingIndicator />}
+
+          <div ref={messagesEndRef} />
         </div>
       </main>
+
+      {/* Chat input — only shown for Draft requests */}
+      {canChat && (
+        <footer className="bg-white border-t border-gray-100 px-4 py-3 flex-shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
+          <form
+            onSubmit={handleSubmit}
+            className="max-w-3xl mx-auto flex items-end gap-3"
+          >
+            <div className="flex-1">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={
+                  isLoading
+                    ? "Product Intake is thinking…"
+                    : "Continue the conversation… (Enter to send, Shift+Enter for new line)"
+                }
+                disabled={isLoading}
+                rows={1}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none leading-relaxed bg-gray-50 placeholder-gray-400 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ minHeight: "48px", maxHeight: "160px" }}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="flex-shrink-0 w-10 h-10 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center shadow-sm"
+              aria-label="Send message"
+            >
+              <Send size={16} />
+            </button>
+          </form>
+          <p className="max-w-3xl mx-auto mt-1.5 text-xs text-gray-400 text-center">
+            Continue your intake conversation to refine your requirements.
+          </p>
+        </footer>
+      )}
+
+      {/* Status message for non-Draft requests */}
+      {!canChat && (
+        <footer className="bg-gray-50 border-t border-gray-100 px-4 py-3 flex-shrink-0">
+          <p className="max-w-3xl mx-auto text-xs text-gray-400 text-center">
+            This conversation is complete. Status:{" "}
+            <span className="font-medium text-gray-600">
+              {requestData.status}
+            </span>
+          </p>
+        </footer>
+      )}
     </div>
   );
 }

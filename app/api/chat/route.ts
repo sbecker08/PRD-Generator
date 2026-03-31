@@ -2,6 +2,24 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { convertToModelMessages, streamText, type UIMessage, type TextUIPart } from "ai";
 import pool from "@/lib/db";
 import { requireAuth } from "@/lib/auth-utils";
+import { transitionStatus } from "@/lib/status";
+
+/** Extract classification from hidden HTML comment markers in assistant text */
+function extractClassification(text: string): {
+  classification: "New Application" | "Feature Enhancement" | null;
+  applicationName: string | null;
+} {
+  const matches = [
+    ...text.matchAll(/<!-- CLASSIFICATION: (New Application|Feature Enhancement)(?:\s*\|\s*(.+?))? -->/g),
+  ];
+  if (matches.length === 0) return { classification: null, applicationName: null };
+  // Use the last match (most recent classification)
+  const last = matches[matches.length - 1];
+  return {
+    classification: last[1] as "New Application" | "Feature Enhancement",
+    applicationName: last[2]?.trim() || null,
+  };
+}
 
 export const maxDuration = 60;
 
@@ -14,6 +32,21 @@ const SYSTEM_PROMPT = `You are Product Intake, a friendly and expert product req
 - Be encouraging and conversational, like a trusted advisor
 - Track what you've learned and guide the conversation toward areas still needed
 - Show enthusiasm for the user's idea
+
+## Request Classification (IMPORTANT — do this first)
+Your VERY FIRST question after the user describes their idea must determine whether this is:
+1. **New Application** — building something from scratch that doesn't exist yet
+2. **Feature Enhancement** — adding to or improving an existing application
+
+Based on the user's initial description, classify the request. If it's clearly a new product/application, classify it as "New Application". If they mention an existing system, app, or product they want to change, classify it as "Feature Enhancement".
+
+When you have determined the classification, include this EXACT hidden marker at the END of your message (after all visible text):
+- For New Application: <!-- CLASSIFICATION: New Application -->
+- For Feature Enhancement: <!-- CLASSIFICATION: Feature Enhancement | [Application Name] -->
+
+If classified as Feature Enhancement, ask the user to confirm which specific application or system they're referring to, so you can note it accurately. Once confirmed, include the marker with the application name.
+
+You may include the classification marker in multiple messages if the classification becomes clearer or changes. The system will use the LATEST marker.
 
 ## Areas to Cover (in natural conversation order)
 1. **Problem & Vision**: What problem exists? Why does it matter? What's the dream outcome?
@@ -152,27 +185,57 @@ export async function POST(req: Request) {
     .reverse()
     .find((m) => m.role === "user");
 
+  // Save user message immediately (before AI response) for durability
+  if (requestId && lastUserMessage) {
+    const userText = lastUserMessage.parts
+      .filter((p): p is TextUIPart => p.type === "text")
+      .map((p) => p.text)
+      .join("");
+
+    await pool.query(
+      `INSERT INTO messages (request_id, role, content) VALUES ($1, $2, $3)`,
+      [requestId, "user", userText]
+    );
+  }
+
   const result = streamText({
     model: anthropic("claude-opus-4-6"),
     system: SYSTEM_PROMPT,
     messages: await convertToModelMessages(messages),
     onFinish: async ({ text }) => {
-      if (!requestId || !lastUserMessage) return;
+      if (!requestId) return;
 
-      const userText = lastUserMessage.parts
-        .filter((p): p is TextUIPart => p.type === "text")
-        .map((p) => p.text)
-        .join("");
-
+      // Save assistant message
       await pool.query(
-        `INSERT INTO messages (request_id, role, content) VALUES ($1, $2, $3), ($1, $4, $5)`,
-        [requestId, "user", userText, "assistant", text]
+        `INSERT INTO messages (request_id, role, content) VALUES ($1, $2, $3)`,
+        [requestId, "assistant", text]
       );
 
       await pool.query(
         "UPDATE requests SET updated_at = NOW() WHERE id = $1",
         [requestId]
       );
+
+      // Extract and persist classification if present
+      const { classification, applicationName } = extractClassification(text);
+      if (classification) {
+        await pool.query(
+          `UPDATE requests SET classification = $1, application_name = $2, updated_at = NOW() WHERE id = $3`,
+          [classification, applicationName, requestId]
+        );
+      }
+
+      // Auto-advance status to "PRD Generated" when PRD is detected
+      const hasPrd =
+        text.includes("# Product Requirements Document") ||
+        text.includes("## 1. Executive Summary");
+      if (hasPrd) {
+        try {
+          await transitionStatus(requestId, "PRD Generated");
+        } catch {
+          // Already transitioned or invalid — ignore
+        }
+      }
     },
   });
 

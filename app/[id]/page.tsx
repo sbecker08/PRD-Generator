@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import UserMenu from "../components/user-menu";
+import PageHeader from "../components/page-header";
 import QuestionsPanel from "./questions-panel";
 import EpicsPanel from "./epics-panel";
 import TimelinePanel from "./timeline-panel";
@@ -169,14 +170,14 @@ export default function RequestDetailPage() {
       })
       .then((data: RequestDetail) => {
         setRequestData(data);
-        setInitialMessages(toUIMessages(data.messages));
+        const uiMessages = toUIMessages(data.messages);
+        setInitialMessages(uiMessages);
+        setMessages(uiMessages);
       })
       .catch(() => setError(true));
   }, [id]);
 
-  const { messages, sendMessage, status: chatStatus } = useChat({
-    messages: initialMessages ?? [],
-  });
+  const { messages, sendMessage, status: chatStatus, setMessages } = useChat();
 
   const isLoading = chatStatus === "submitted" || chatStatus === "streaming";
 
@@ -247,64 +248,31 @@ export default function RequestDetailPage() {
       style={{ background: "var(--background)" }}
     >
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm flex-shrink-0">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center shadow-sm">
-              <FileText size={18} className="text-white" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-base font-semibold text-gray-900 leading-tight truncate max-w-xs">
-                {requestData.title}
-              </h1>
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-gray-500 leading-tight">
-                  Product Intake
-                </p>
-                <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                  {requestData.status}
-                </span>
-                {requestData.classification && (
-                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                    {requestData.classification}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+      <PageHeader
+        icon={<FileText size={18} className="text-white" />}
+        title={requestData.title}
+        subtitle={
           <div className="flex items-center gap-2">
-            {canApprove && (
-              <button
-                onClick={handleApprove}
-                disabled={approving}
-                className="flex items-center gap-1.5 text-sm bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
-              >
-                <CheckCircle2 size={14} />
-                {approving ? "Approving…" : "Approve PRD"}
-              </button>
-            )}
-            {requestData?.status === "Business Approved" && (
-              <span className="flex items-center gap-1.5 text-sm bg-green-100 text-green-700 px-3 py-1.5 rounded-lg font-medium">
-                <CheckCircle2 size={14} />
-                PRD Approved
+            <span>Product Intake</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+              {requestData.status}
+            </span>
+            {requestData.classification && (
+              <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                {requestData.classification}
               </span>
             )}
-            {prdContent && (
-              <button
-                onClick={() => downloadPrd(prdContent)}
-                className="flex items-center gap-1.5 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
-              >
-                <Download size={14} />
-                Download PRD
-              </button>
-            )}
+          </div>
+        }
+        actions={
+          <>
             {isReviewer && (
               <Link
                 href="/review"
                 className="flex items-center gap-1.5 text-sm text-yellow-700 px-3 py-1.5 rounded-lg hover:bg-yellow-50 transition-colors"
               >
                 <ClipboardCheck size={14} />
-                Review Queue
+                IS Review
               </Link>
             )}
             <Link
@@ -315,9 +283,9 @@ export default function RequestDetailPage() {
               Dashboard
             </Link>
             <UserMenu />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {/* Messages */}
       <main className="flex-1 overflow-y-auto px-4 py-6">
@@ -441,6 +409,17 @@ export default function RequestDetailPage() {
       {/* Chat input — only shown for Draft requests */}
       {canChat && (
         <footer className="bg-white border-t border-gray-100 px-4 py-3 flex-shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
+          {prdContent && (
+            <div className="max-w-3xl mx-auto mb-2 flex justify-end">
+              <button
+                onClick={() => downloadPrd(prdContent)}
+                className="flex items-center gap-1.5 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
+              >
+                <Download size={14} />
+                Download PRD
+              </button>
+            </div>
+          )}
           <form
             onSubmit={handleSubmit}
             className="max-w-3xl mx-auto flex items-end gap-3"
@@ -480,6 +459,35 @@ export default function RequestDetailPage() {
       {/* Status message for non-Draft requests */}
       {!canChat && (
         <footer className="bg-gray-50 border-t border-gray-100 px-4 py-3 flex-shrink-0">
+          {(canApprove || requestData?.status === "Business Approved" || prdContent) && (
+            <div className="max-w-3xl mx-auto mb-2 flex items-center justify-end gap-2">
+              {canApprove && (
+                <button
+                  onClick={handleApprove}
+                  disabled={approving}
+                  className="flex items-center gap-1.5 text-sm bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
+                >
+                  <CheckCircle2 size={14} />
+                  {approving ? "Approving…" : "Approve PRD"}
+                </button>
+              )}
+              {requestData?.status === "Business Approved" && (
+                <span className="flex items-center gap-1.5 text-sm bg-green-100 text-green-700 px-3 py-1.5 rounded-lg font-medium">
+                  <CheckCircle2 size={14} />
+                  PRD Approved
+                </span>
+              )}
+              {prdContent && (
+                <button
+                  onClick={() => downloadPrd(prdContent)}
+                  className="flex items-center gap-1.5 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
+                >
+                  <Download size={14} />
+                  Download PRD
+                </button>
+              )}
+            </div>
+          )}
           <p className="max-w-3xl mx-auto text-xs text-gray-400 text-center">
             {requestData.status === "Q&A Sent" && isRequester
               ? "Please answer the reviewer's questions above."

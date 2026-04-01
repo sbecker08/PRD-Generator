@@ -5,6 +5,7 @@ import { STATUS_COLORS, type RequestStatus } from "@/lib/status";
 import { getCurrentUser, hasRole } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
 import UserMenu from "./components/user-menu";
+import PageHeader from "./components/page-header";
 
 type RequestRow = {
   id: string;
@@ -45,20 +46,12 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-full" style={{ background: "var(--background)" }}>
-      <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center shadow-sm">
-              <FileText size={18} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-gray-900 leading-tight">
-                Product Intake
-              </h1>
-              <p className="text-xs text-gray-500 leading-tight">My Requests</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+      <PageHeader
+        icon={<FileText size={18} className="text-white" />}
+        title="Product Intake"
+        subtitle="My Requests"
+        actions={
+          <>
             <Link
               href="/reporting"
               className="flex items-center gap-1.5 text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors font-medium"
@@ -72,7 +65,7 @@ export default async function DashboardPage() {
                 className="flex items-center gap-1.5 text-sm text-yellow-700 bg-yellow-50 px-3 py-1.5 rounded-lg hover:bg-yellow-100 transition-colors font-medium"
               >
                 <ClipboardCheck size={14} />
-                Review Queue
+                IS Review
               </Link>
             )}
             <Link
@@ -83,9 +76,9 @@ export default async function DashboardPage() {
               New Request
             </Link>
             <UserMenu />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="px-4 py-8">
         <div className="max-w-3xl mx-auto">

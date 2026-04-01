@@ -180,7 +180,9 @@ export default function QuestionsPanel({
     draftQuestions.length > 0 &&
     ["Business Approved", "IS Review"].includes(requestStatus);
   const canCompleteReview =
-    isReviewer && requestStatus === "IS Review" && allSentAnswered;
+    isReviewer &&
+    ["Business Approved", "IS Review"].includes(requestStatus) &&
+    (sentQuestions.length === 0 || allSentAnswered);
   const canAnswer = isRequester && requestStatus === "Q&A Sent";
 
   // Don't show panel if no questions and user can't add any

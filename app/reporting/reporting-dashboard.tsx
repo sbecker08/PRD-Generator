@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import UserMenu from "../components/user-menu";
+import PageHeader from "../components/page-header";
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
   Draft: { bg: "bg-gray-100", text: "text-gray-600", bar: "bg-gray-400" },
@@ -166,22 +167,12 @@ export default function ReportingDashboard() {
   return (
     <div className="min-h-full" style={{ background: "var(--background)" }}>
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center shadow-sm">
-              <BarChart3 size={18} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-gray-900 leading-tight">
-                Reporting
-              </h1>
-              <p className="text-xs text-gray-500 leading-tight">
-                Pipeline overview & metrics
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+      <PageHeader
+        icon={<BarChart3 size={18} className="text-white" />}
+        title="Reporting"
+        subtitle="Pipeline overview & metrics"
+        actions={
+          <>
             <Link
               href="/"
               className="flex items-center gap-1.5 text-sm text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
@@ -190,9 +181,9 @@ export default function ReportingDashboard() {
               Dashboard
             </Link>
             <UserMenu />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="px-4 py-6">
         <div className="max-w-5xl mx-auto space-y-6">

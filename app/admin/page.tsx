@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FileText, LayoutDashboard, Shield, Save, Check } from "lucide-react";
 import UserMenu from "../components/user-menu";
+import PageHeader from "../components/page-header";
 
 type UserRole = "Business Requester" | "IS Reviewer" | "IS Engineer" | "Admin";
 
@@ -112,22 +113,12 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-full" style={{ background: "var(--background)" }}>
-      <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center shadow-sm">
-              <Shield size={18} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-gray-900 leading-tight">
-                Admin
-              </h1>
-              <p className="text-xs text-gray-500 leading-tight">
-                User &amp; Role Management
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+      <PageHeader
+        icon={<Shield size={18} className="text-white" />}
+        title="Admin"
+        subtitle="User & Role Management"
+        actions={
+          <>
             <Link
               href="/"
               className="flex items-center gap-1.5 text-sm text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
@@ -136,9 +127,9 @@ export default function AdminPage() {
               Dashboard
             </Link>
             <UserMenu />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="px-4 py-8">
         <div className="max-w-4xl mx-auto">

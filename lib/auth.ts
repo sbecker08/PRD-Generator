@@ -31,12 +31,19 @@ declare module "next-auth" {
  * Returns the local user id.
  */
 async function upsertUser(entraId: string, name: string, email: string): Promise<string> {
+  const normalizedEmail = email.toLowerCase();
+  // Link any pre-provisioned account (no entra_id yet) before the main upsert,
+  // so the INSERT below doesn't hit a unique-email violation.
+  await pool.query(
+    `UPDATE users SET entra_id = $1, name = $2 WHERE email = $3 AND entra_id IS NULL`,
+    [entraId, name, normalizedEmail]
+  );
   const { rows } = await pool.query<{ id: string }>(
     `INSERT INTO users (entra_id, name, email)
      VALUES ($1, $2, $3)
      ON CONFLICT (entra_id) DO UPDATE SET name = $2, email = $3
      RETURNING id`,
-    [entraId, name, email]
+    [entraId, name, normalizedEmail]
   );
   return rows[0].id;
 }

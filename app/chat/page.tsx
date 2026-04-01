@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import { Send, Download, FileText, RotateCcw, Bot, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import UserMenu from "../components/user-menu";
+import PageHeader from "../components/page-header";
 
 // Initial static greeting shown before any API call
 const INITIAL_GREETING: UIMessage = {
@@ -137,22 +138,12 @@ export default function Home() {
   return (
     <div className="flex flex-col h-full" style={{ background: "var(--background)" }}>
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm flex-shrink-0">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center shadow-sm">
-              <FileText size={18} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-gray-900 leading-tight">
-                Product Intake
-              </h1>
-              <p className="text-xs text-gray-500 leading-tight">
-                Product Requirements Assistant
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+      <PageHeader
+        icon={<FileText size={18} className="text-white" />}
+        title="Product Intake"
+        subtitle="Product Requirements Assistant"
+        actions={
+          <>
             {prdIsReady && (
               <button
                 onClick={downloadPrd}
@@ -178,9 +169,9 @@ export default function Home() {
               Dashboard
             </Link>
             <UserMenu />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {/* Messages */}
       <main className="flex-1 overflow-y-auto px-4 py-6">

@@ -20,7 +20,7 @@ export type RequestStatus =
 const VALID_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
   Draft: ["PRD Generated"],
   "PRD Generated": ["Business Approved"],
-  "Business Approved": ["IS Review"],
+  "Business Approved": ["IS Review", "Epic Planning"],
   "IS Review": ["Q&A Sent", "Epic Planning"],
   "Q&A Sent": ["IS Review"],
   "Epic Planning": ["In Progress"],

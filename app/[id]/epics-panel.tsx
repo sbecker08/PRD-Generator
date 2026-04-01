@@ -110,6 +110,16 @@ export default function EpicsPanel({
       }
 
       const data = await res.json();
+
+      // Delete existing epics before inserting the new set
+      for (const epic of epics) {
+        await fetch(`/api/requests/${requestId}/epics`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ epicId: epic.id }),
+        });
+      }
+
       for (const epic of data.epics) {
         await fetch(`/api/requests/${requestId}/epics`, {
           method: "POST",

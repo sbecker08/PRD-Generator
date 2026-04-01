@@ -11,7 +11,13 @@ const EPIC_BREAKDOWN_PROMPT = `You are an expert software architect and project 
 - Each epic should be a cohesive, independently deliverable unit of work
 - Epics should be ordered logically (dependencies first)
 - Each epic needs a clear title and a detailed description
-- Descriptions should include: what will be built, key acceptance criteria, and any dependencies on other epics
+- Descriptions must include:
+  - What will be built
+  - Which specific PRD requirements and business rules apply to this epic (quote or reference them by section/number if available)
+  - Key acceptance criteria that map directly to those requirements
+  - Any dependencies on other epics
+- Every functional requirement and business rule from the PRD must be captured in at least one epic — do not omit any
+- The FIRST epic must always cover foundational project setup (e.g., repo initialization, dev environment, CI/CD pipeline, core dependencies, project scaffolding) — even if the PRD does not mention it explicitly
 - Aim for 3-10 epics depending on project complexity
 - Write descriptions from a development perspective — what needs to be implemented
 
@@ -20,7 +26,7 @@ Return ONLY valid JSON — no markdown fences, no commentary. The format must be
 [
   {
     "title": "Epic title",
-    "description": "Detailed description of what this epic covers, acceptance criteria, and dependencies"
+    "description": "Detailed description of what this epic covers, which PRD requirements/business rules it addresses, acceptance criteria, and dependencies"
   }
 ]`;
 

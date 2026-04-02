@@ -96,8 +96,8 @@ export default function ReportingDashboard() {
   const [dateTo, setDateTo] = useState("");
   const [sortBy, setSortBy] = useState("updated_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [showFilters, setShowFilters] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<string | null>("overview");
+  const [showFilters, setShowFilters] = useState(true);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["overview"]));
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -147,7 +147,12 @@ export default function ReportingDashboard() {
   };
 
   const toggleSection = (section: string) => {
-    setExpandedSection((prev) => (prev === section ? null : section));
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(section)) next.delete(section);
+      else next.add(section);
+      return next;
+    });
   };
 
   // Computed metrics
@@ -342,9 +347,9 @@ export default function ReportingDashboard() {
                 <BarChart3 size={14} className="text-primary-600" />
                 Status Overview
               </div>
-              {expandedSection === "overview" ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {expandedSections.has("overview") ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
-            {expandedSection === "overview" && (
+            {expandedSections.has("overview") && (
               <div className="border-t border-gray-100 px-5 py-4">
                 {loading ? (
                   <div className="text-center py-8 text-gray-400 text-sm">Loading...</div>
@@ -387,9 +392,9 @@ export default function ReportingDashboard() {
                 <Clock size={14} className="text-orange-600" />
                 Cycle Time Metrics
               </div>
-              {expandedSection === "cycleTimes" ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {expandedSections.has("cycleTimes") ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
-            {expandedSection === "cycleTimes" && (
+            {expandedSections.has("cycleTimes") && (
               <div className="border-t border-gray-100 px-5 py-4">
                 {loading ? (
                   <div className="text-center py-8 text-gray-400 text-sm">Loading...</div>
@@ -453,9 +458,9 @@ export default function ReportingDashboard() {
                   </span>
                 )}
               </div>
-              {expandedSection === "requests" ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {expandedSections.has("requests") ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
-            {expandedSection === "requests" && (
+            {expandedSections.has("requests") && (
               <div className="border-t border-gray-100">
                 {loading ? (
                   <div className="text-center py-8 text-gray-400 text-sm">Loading...</div>

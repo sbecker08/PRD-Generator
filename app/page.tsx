@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { FileText, MessageSquare, Plus, Clock, ClipboardCheck, BarChart3 } from "lucide-react";
+import { FileText, MessageSquare, Clock, ClipboardCheck, BarChart3 } from "lucide-react";
 import pool from "@/lib/db";
 import { STATUS_COLORS, type RequestStatus } from "@/lib/status";
 import { getCurrentUser, hasRole } from "@/lib/auth-utils";
 import { redirect } from "next/navigation";
 import UserMenu from "./components/user-menu";
 import PageHeader from "./components/page-header";
+import NewRequestButton from "./components/new-request-button";
 
 type RequestRow = {
   id: string;
@@ -68,13 +69,7 @@ export default async function DashboardPage() {
                 IS Review
               </Link>
             )}
-            <Link
-              href="/chat"
-              className="flex items-center gap-1.5 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
-            >
-              <Plus size={14} />
-              New Request
-            </Link>
+            <NewRequestButton />
             <UserMenu />
           </>
         }
@@ -94,13 +89,7 @@ export default async function DashboardPage() {
                 Start a conversation with Product Intake to create your first product
                 requirements document.
               </p>
-              <Link
-                href="/chat"
-                className="inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
-              >
-                <Plus size={14} />
-                Start a request
-              </Link>
+              <NewRequestButton />
             </div>
           ) : (
             <div className="space-y-3">

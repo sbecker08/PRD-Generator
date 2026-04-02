@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import type { UIMessage, TextUIPart } from "ai";
 import Link from "next/link";
@@ -97,6 +97,8 @@ function TypingIndicator() {
 export default function RequestDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isNew = searchParams.get("new") === "1";
   const [requestData, setRequestData] = useState<RequestDetail | null>(null);
   const [error, setError] = useState(false);
   const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(
@@ -145,8 +147,13 @@ export default function RequestDetailPage() {
     "In Progress", "Complete"
   ].includes(requestData.status);
 
-  // Fetch request data
+  // Fetch request data (skip for brand-new requests not yet persisted)
   useEffect(() => {
+    if (isNew) {
+      setRequestData({ id, title: "New Request", status: "Draft", classification: null, application_name: null, created_by_user_id: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), messages: [] });
+      setInitialMessages([]);
+      return;
+    }
     fetch(`/api/requests/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Not found");
@@ -159,7 +166,7 @@ export default function RequestDetailPage() {
         setMessages(uiMessages);
       })
       .catch(() => setError(true));
-  }, [id]);
+  }, [id, isNew]);
 
   const { messages, sendMessage, status: chatStatus, setMessages } = useChat();
 
@@ -188,6 +195,19 @@ export default function RequestDetailPage() {
     const trimmed = input.trim();
     if (!trimmed || isLoading || !canChat) return;
     setInput("");
+
+    // For new requests, create the record on the first message using the pre-known id
+    if (isNew && messages.length === 0) {
+      const title = trimmed.slice(0, 120);
+      await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, title }),
+      });
+      setRequestData((prev) => prev ? { ...prev, title } : prev);
+      router.replace(`/${id}`);
+    }
+
     sendMessage({ text: trimmed }, { body: { requestId: id } });
   };
 
@@ -283,6 +303,22 @@ export default function RequestDetailPage() {
               Back
             </button>
           </div>
+
+          {/* Initial greeting for brand-new requests with no messages yet */}
+          {messages.length === 0 && canChat && (
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                <Bot size={15} className="text-white" />
+              </div>
+              <div className="max-w-[85%] bg-white text-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-gray-100">
+                <div className="text-sm prose-chat">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {"Hi! I'm Product Intake, your product requirements specialist.\n\nI'll guide you through a series of questions to build a comprehensive **Product Requirements Document (PRD)** — the blueprint your development team needs to bring your idea to life.\n\nLet's start at the beginning: **What product or feature are you looking to build?** Tell me as much or as little as you know right now — we'll fill in the details as we go."}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            </div>
+          )}
 
           {messages.map((message) => {
             const isUser = message.role === "user";

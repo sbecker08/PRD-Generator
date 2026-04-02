@@ -30,10 +30,12 @@ export async function POST(req: NextRequest) {
   const user = await requireAuth();
   if (user instanceof Response) return user;
 
-  const { title }: { title: string } = await req.json();
+  const { id: providedId, title }: { id?: string; title: string } = await req.json();
   const { rows } = await pool.query<{ id: string }>(
-    "INSERT INTO requests (title, status, created_by_user_id) VALUES ($1, 'Draft', $2) RETURNING id",
-    [title, user.id]
+    providedId
+      ? "INSERT INTO requests (id, title, status, created_by_user_id) VALUES ($1, $2, 'Draft', $3) RETURNING id"
+      : "INSERT INTO requests (title, status, created_by_user_id) VALUES ($1, 'Draft', $2) RETURNING id",
+    providedId ? [providedId, title, user.id] : [title, user.id]
   );
 
   // Record initial status in history

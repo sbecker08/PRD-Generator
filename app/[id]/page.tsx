@@ -14,12 +14,12 @@ import {
   Download,
   LayoutDashboard,
   Send,
-  CheckCircle2,
   ClipboardCheck,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import UserMenu from "../components/user-menu";
 import PageHeader from "../components/page-header";
+import PrdPanel from "./prd-panel";
 import QuestionsPanel from "./questions-panel";
 import EpicsPanel from "./epics-panel";
 import TimelinePanel from "./timeline-panel";
@@ -103,8 +103,8 @@ export default function RequestDetailPage() {
     null
   );
   const [input, setInput] = useState("");
-  const [approving, setApproving] = useState(false);
   const [epicsKey, setEpicsKey] = useState(0);
+  const [prdPanelKey, setPrdPanelKey] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { data: session } = useSession();
@@ -112,20 +112,22 @@ export default function RequestDetailPage() {
   // Determine if this conversation can be continued (only Draft status)
   const canChat = requestData?.status === "Draft";
 
-  // Show approve button only when PRD is generated and current user is the original requester
-  const canApprove =
-    requestData?.status === "PRD Generated" &&
-    session?.user?.id === requestData?.created_by_user_id;
-
-  // Role checks for Q&A panel
+  // Role checks
   const userRoles = (session?.user as { roles?: string[] })?.roles ?? [];
   const isReviewer = userRoles.includes("IS Reviewer");
   const isEngineer = userRoles.includes("IS Engineer");
   const isRequester = session?.user?.id === requestData?.created_by_user_id;
 
+  // Show PRD panel from PRD Generated onwards (dedicated versioned view)
+  const showPrdPanel = requestData && [
+    "PRD Generated", "Business Approved", "IS Review", "Q&A Sent",
+    "PRD Updated", "Epic Planning", "In Progress", "Complete"
+  ].includes(requestData.status);
+
   // Show Q&A panel for review-related statuses
   const showQAPanel = requestData && [
-    "Business Approved", "IS Review", "Q&A Sent", "Epic Planning", "In Progress", "Complete"
+    "Business Approved", "IS Review", "Q&A Sent", "PRD Updated",
+    "Epic Planning", "In Progress", "Complete"
   ].includes(requestData.status);
 
   // Show epics panel for Epic Planning and beyond
@@ -142,24 +144,6 @@ export default function RequestDetailPage() {
   const showTimeline = requestData && [
     "In Progress", "Complete"
   ].includes(requestData.status);
-
-  const handleApprove = async () => {
-    if (!requestData || approving) return;
-    setApproving(true);
-    try {
-      const res = await fetch(`/api/requests/${id}/approve`, { method: "POST" });
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.error || "Failed to approve PRD");
-        return;
-      }
-      setRequestData({ ...requestData, status: "Business Approved" });
-    } catch {
-      alert("Failed to approve PRD");
-    } finally {
-      setApproving(false);
-    }
-  };
 
   // Fetch request data
   useEffect(() => {
@@ -289,7 +273,7 @@ export default function RequestDetailPage() {
 
       {/* Messages */}
       <main className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="mb-4">
             <button
               onClick={() => router.back()}
@@ -360,6 +344,19 @@ export default function RequestDetailPage() {
 
           {isLoading && <TypingIndicator />}
 
+          {/* PRD Panel — versioned view, shown from PRD Generated onwards */}
+          {showPrdPanel && (
+            <PrdPanel
+              key={prdPanelKey}
+              requestId={id}
+              requestStatus={requestData.status}
+              isRequester={isRequester}
+              onStatusChange={(newStatus) =>
+                setRequestData({ ...requestData, status: newStatus })
+              }
+            />
+          )}
+
           {/* Q&A Panel for review-related statuses */}
           {showQAPanel && (
             <QuestionsPanel
@@ -370,6 +367,10 @@ export default function RequestDetailPage() {
               onStatusChange={(newStatus) =>
                 setRequestData({ ...requestData, status: newStatus })
               }
+              onPrdUpdated={() => {
+                setPrdPanelKey((k) => k + 1);
+                setRequestData({ ...requestData, status: "PRD Updated" });
+              }}
             />
           )}
 
@@ -410,7 +411,7 @@ export default function RequestDetailPage() {
       {canChat && (
         <footer className="bg-white border-t border-gray-100 px-4 py-3 flex-shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
           {prdContent && (
-            <div className="max-w-3xl mx-auto mb-2 flex justify-end">
+            <div className="max-w-5xl mx-auto mb-2 flex justify-end">
               <button
                 onClick={() => downloadPrd(prdContent)}
                 className="flex items-center gap-1.5 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
@@ -422,7 +423,7 @@ export default function RequestDetailPage() {
           )}
           <form
             onSubmit={handleSubmit}
-            className="max-w-3xl mx-auto flex items-end gap-3"
+            className="max-w-5xl mx-auto flex items-end gap-3"
           >
             <div className="flex-1">
               <textarea
@@ -450,7 +451,7 @@ export default function RequestDetailPage() {
               <Send size={16} />
             </button>
           </form>
-          <p className="max-w-3xl mx-auto mt-1.5 text-xs text-gray-400 text-center">
+          <p className="max-w-5xl mx-auto mt-1.5 text-xs text-gray-400 text-center">
             Continue your intake conversation to refine your requirements.
           </p>
         </footer>
@@ -459,53 +460,28 @@ export default function RequestDetailPage() {
       {/* Status message for non-Draft requests */}
       {!canChat && (
         <footer className="bg-gray-50 border-t border-gray-100 px-4 py-3 flex-shrink-0">
-          {(canApprove || requestData?.status === "Business Approved" || prdContent) && (
-            <div className="max-w-3xl mx-auto mb-2 flex items-center justify-end gap-2">
-              {canApprove && (
-                <button
-                  onClick={handleApprove}
-                  disabled={approving}
-                  className="flex items-center gap-1.5 text-sm bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
-                >
-                  <CheckCircle2 size={14} />
-                  {approving ? "Approving…" : "Approve PRD"}
-                </button>
-              )}
-              {requestData?.status === "Business Approved" && (
-                <span className="flex items-center gap-1.5 text-sm bg-green-100 text-green-700 px-3 py-1.5 rounded-lg font-medium">
-                  <CheckCircle2 size={14} />
-                  PRD Approved
-                </span>
-              )}
-              {prdContent && (
-                <button
-                  onClick={() => downloadPrd(prdContent)}
-                  className="flex items-center gap-1.5 text-sm bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
-                >
-                  <Download size={14} />
-                  Download PRD
-                </button>
-              )}
-            </div>
-          )}
-          <p className="max-w-3xl mx-auto text-xs text-gray-400 text-center">
-            {requestData.status === "Q&A Sent" && isRequester
-              ? "Please answer the reviewer's questions above."
+          <p className="max-w-5xl mx-auto text-xs text-gray-400 text-center">
+            {requestData.status === "PRD Generated" && isRequester
+              ? "Your PRD is ready — review it above and approve to proceed."
+              : requestData.status === "PRD Updated" && isRequester
+                ? "An updated PRD has been generated from the Q&A insights. Review and approve above."
+              : requestData.status === "Q&A Sent" && isRequester
+                ? "Please answer the reviewer's questions above."
               : requestData.status === "IS Review" && isReviewer
-                ? "Review the PRD and add any clarifying questions, or mark the review as complete."
-                : requestData.status === "Business Approved" && isReviewer
-                  ? "This PRD is ready for your review. Add questions or mark as complete."
-                  : requestData.status === "Epic Planning" && isEngineer
-                    ? "Generate and refine the epic breakdown, then approve to begin development."
-                    : requestData.status === "In Progress" && isEngineer
-                      ? "Track build progress by updating epic statuses above."
-                      : requestData.status === "Complete"
-                        ? "This request has been completed."
-                        : <>This conversation is complete. Status:{" "}
-                            <span className="font-medium text-gray-600">
-                              {requestData.status}
-                            </span>
-                          </>}
+                ? "Review the PRD, add clarifying questions, update the PRD with Q&A insights, or mark the review as complete."
+              : requestData.status === "Business Approved" && isReviewer
+                ? "This PRD is ready for your review. Add questions or mark as complete."
+              : requestData.status === "Epic Planning" && isEngineer
+                ? "Generate and refine the epic breakdown, then approve to begin development."
+              : requestData.status === "In Progress" && isEngineer
+                ? "Track build progress by updating epic statuses above."
+              : requestData.status === "Complete"
+                ? "This request has been completed."
+              : <>This conversation is complete. Status:{" "}
+                  <span className="font-medium text-gray-600">
+                    {requestData.status}
+                  </span>
+                </>}
           </p>
         </footer>
       )}

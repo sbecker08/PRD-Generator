@@ -132,7 +132,7 @@ export default function AdminPage() {
       />
 
       <main className="px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           {users.length === 0 ? (
             <div className="text-center py-20">
               <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">

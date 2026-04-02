@@ -9,6 +9,7 @@ import {
   Plus,
   ClipboardCheck,
   HelpCircle,
+  Sparkles,
 } from "lucide-react";
 
 type Question = {
@@ -29,6 +30,7 @@ type QuestionsProps = {
   isReviewer: boolean;
   isRequester: boolean;
   onStatusChange: (newStatus: string) => void;
+  onPrdUpdated?: () => void;
 };
 
 export default function QuestionsPanel({
@@ -37,6 +39,7 @@ export default function QuestionsPanel({
   isReviewer,
   isRequester,
   onStatusChange,
+  onPrdUpdated,
 }: QuestionsProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [newQuestion, setNewQuestion] = useState("");
@@ -44,6 +47,7 @@ export default function QuestionsPanel({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [updatingPrd, setUpdatingPrd] = useState(false);
   const [submittingAnswer, setSubmittingAnswer] = useState<string | null>(null);
 
   const fetchQuestions = useCallback(async () => {
@@ -165,6 +169,26 @@ export default function QuestionsPanel({
     }
   };
 
+  const updatePrd = async () => {
+    setUpdatingPrd(true);
+    try {
+      const res = await fetch(`/api/requests/${requestId}/prd/versions`, {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        onStatusChange("PRD Updated");
+        onPrdUpdated?.();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update PRD");
+      }
+    } finally {
+      setUpdatingPrd(false);
+    }
+  };
+
   // Categorize questions
   const draftQuestions = questions.filter((q) => !q.sent_at);
   const sentQuestions = questions.filter((q) => q.sent_at);
@@ -179,10 +203,17 @@ export default function QuestionsPanel({
     isReviewer &&
     draftQuestions.length > 0 &&
     ["Business Approved", "IS Review"].includes(requestStatus);
+  const reviewComplete =
+    sentQuestions.length === 0 || allSentAnswered;
   const canCompleteReview =
     isReviewer &&
     ["Business Approved", "IS Review"].includes(requestStatus) &&
-    (sentQuestions.length === 0 || allSentAnswered);
+    reviewComplete;
+  // IS Reviewer can update the PRD with Q&A insights when all questions are answered (or none sent)
+  const canUpdatePrd =
+    isReviewer &&
+    requestStatus === "IS Review" &&
+    reviewComplete;
   const canAnswer = isRequester && requestStatus === "Q&A Sent";
 
   // Don't show panel if no questions and user can't add any
@@ -212,7 +243,7 @@ export default function QuestionsPanel({
         <div className="flex items-center gap-2">
           <HelpCircle size={16} className="text-yellow-600" />
           <h3 className="text-sm font-semibold text-gray-700">
-            Review Q&A
+            Product Manager Review
           </h3>
           {questions.length > 0 && (
             <span className="text-xs text-gray-400">
@@ -222,14 +253,25 @@ export default function QuestionsPanel({
           )}
         </div>
         <div className="flex items-center gap-2">
+          {canUpdatePrd && (
+            <button
+              onClick={updatePrd}
+              disabled={updatingPrd || completing}
+              className="flex items-center gap-1.5 text-xs bg-sky-600 text-white px-3 py-1.5 rounded-lg hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              title="Generate an updated PRD incorporating the Q&A answers, then send to business for re-approval"
+            >
+              <Sparkles size={12} />
+              {updatingPrd ? "Updating PRD…" : "Update PRD with Q&A"}
+            </button>
+          )}
           {canCompleteReview && (
             <button
               onClick={completeReview}
-              disabled={completing}
+              disabled={completing || updatingPrd}
               className="flex items-center gap-1.5 text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             >
               <ClipboardCheck size={12} />
-              {completing ? "Completing..." : "Mark Review Complete"}
+              {completing ? "Completing..." : "Complete Review"}
             </button>
           )}
           {canSendQuestions && (

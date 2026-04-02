@@ -6,6 +6,7 @@ export type RequestStatus =
   | "Business Approved"
   | "IS Review"
   | "Q&A Sent"
+  | "PRD Updated"
   | "Epic Planning"
   | "In Progress"
   | "Complete";
@@ -21,8 +22,9 @@ const VALID_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
   Draft: ["PRD Generated"],
   "PRD Generated": ["Business Approved"],
   "Business Approved": ["IS Review", "Epic Planning"],
-  "IS Review": ["Q&A Sent", "Epic Planning"],
+  "IS Review": ["Q&A Sent", "Epic Planning", "PRD Updated"],
   "Q&A Sent": ["IS Review"],
+  "PRD Updated": ["Epic Planning"],
   "Epic Planning": ["In Progress"],
   "In Progress": ["Complete"],
   Complete: [],
@@ -82,6 +84,7 @@ export const STATUS_COLORS: Record<RequestStatus, { bg: string; text: string }> 
   "Business Approved": { bg: "bg-green-100", text: "text-green-700" },
   "IS Review": { bg: "bg-yellow-100", text: "text-yellow-700" },
   "Q&A Sent": { bg: "bg-orange-100", text: "text-orange-700" },
+  "PRD Updated": { bg: "bg-sky-100", text: "text-sky-700" },
   "Epic Planning": { bg: "bg-purple-100", text: "text-purple-700" },
   "In Progress": { bg: "bg-indigo-100", text: "text-indigo-700" },
   Complete: { bg: "bg-emerald-100", text: "text-emerald-700" },

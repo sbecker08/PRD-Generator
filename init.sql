@@ -26,6 +26,7 @@ DO $$ BEGIN
     'Business Approved',
     'IS Review',
     'Q&A Sent',
+    'PRD Updated',
     'Epic Planning',
     'In Progress',
     'Complete'
@@ -50,8 +51,29 @@ CREATE TABLE IF NOT EXISTS requests (
   classification request_classification,
   application_name TEXT,
   created_by_user_id UUID REFERENCES users(id),
+  approved_prd_version_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- PRD version status enum
+DO $$ BEGIN
+  CREATE TYPE prd_version_status AS ENUM ('Pending Approval', 'Approved', 'Superseded');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- PRD versions (versioned history of the Product Requirements Document)
+CREATE TABLE IF NOT EXISTS prd_versions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  request_id UUID NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+  version_number INT NOT NULL,
+  content TEXT NOT NULL,
+  change_summary TEXT,
+  status prd_version_status NOT NULL DEFAULT 'Pending Approval',
+  approved_by_user_id UUID REFERENCES users(id),
+  approved_at TIMESTAMPTZ,
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (request_id, version_number)
 );
 
 -- Messages (chat history)
@@ -126,3 +148,11 @@ CREATE TABLE IF NOT EXISTS change_requests (
   status change_request_status NOT NULL DEFAULT 'Draft',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Deferred FK: requests.approved_prd_version_id → prd_versions.id
+-- (prd_versions references requests, so the FK must be added after both tables exist)
+DO $$ BEGIN
+  ALTER TABLE requests ADD CONSTRAINT fk_approved_prd_version
+    FOREIGN KEY (approved_prd_version_id) REFERENCES prd_versions(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

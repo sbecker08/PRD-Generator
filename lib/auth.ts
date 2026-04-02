@@ -38,6 +38,13 @@ async function upsertUser(entraId: string, name: string, email: string): Promise
     `UPDATE users SET entra_id = $1, name = $2 WHERE email = $3 AND entra_id IS NULL`,
     [entraId, name, normalizedEmail]
   );
+
+  // Check if this will be the first user before inserting
+  const { rows: countRows } = await pool.query<{ count: string }>(
+    `SELECT COUNT(*) AS count FROM users`
+  );
+  const isFirstUser = parseInt(countRows[0].count, 10) === 0;
+
   const { rows } = await pool.query<{ id: string }>(
     `INSERT INTO users (entra_id, name, email)
      VALUES ($1, $2, $3)
@@ -45,7 +52,16 @@ async function upsertUser(entraId: string, name: string, email: string): Promise
      RETURNING id`,
     [entraId, name, normalizedEmail]
   );
-  return rows[0].id;
+  const userId = rows[0].id;
+
+  if (isFirstUser) {
+    await pool.query(
+      `INSERT INTO user_roles (user_id, role) VALUES ($1, 'Admin') ON CONFLICT DO NOTHING`,
+      [userId]
+    );
+  }
+
+  return userId;
 }
 
 async function getUserRoles(userId: string): Promise<UserRole[]> {
@@ -82,6 +98,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.userId = userId;
         token.entraId = entraId;
         token.roles = roles;
+      } else if (token.entraId) {
+        // On subsequent token refreshes, verify the user still exists (e.g. after DB reset)
+        const { rows } = await pool.query<{ id: string }>(
+          "SELECT id FROM users WHERE id = $1",
+          [token.userId]
+        );
+        if (rows.length === 0) {
+          const userId = await upsertUser(
+            token.entraId as string,
+            (token.name as string) ?? "",
+            (token.email as string) ?? ""
+          );
+          const roles = await getUserRoles(userId);
+          token.userId = userId;
+          token.roles = roles;
+        }
       }
       return token;
     },

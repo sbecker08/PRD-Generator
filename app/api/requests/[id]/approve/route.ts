@@ -3,8 +3,14 @@ import pool from "@/lib/db";
 import { transitionStatus } from "@/lib/status";
 import { requireAuth } from "@/lib/auth-utils";
 
+/**
+ * POST /api/requests/[id]/approve
+ * Business Requester approves the PRD, transitioning from "PRD Generated" → "Business Approved".
+ * Accepts an optional prd_version_id body param to tie the approval to a specific PRD version.
+ * If no prd_version_id is provided, looks for the latest Pending Approval version.
+ */
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await requireAuth();
@@ -26,6 +32,40 @@ export async function POST(
     return Response.json(
       { error: "Only the original requester can approve the PRD" },
       { status: 403 }
+    );
+  }
+
+  // Read optional prd_version_id from body
+  let prdVersionId: string | null = null;
+  try {
+    const body = await req.json().catch(() => ({}));
+    prdVersionId = body?.prd_version_id ?? null;
+  } catch {
+    // No body — that's fine
+  }
+
+  // If no version id provided, find the latest Pending Approval version
+  if (!prdVersionId) {
+    const { rows: vRows } = await pool.query<{ id: string }>(
+      `SELECT id FROM prd_versions
+       WHERE request_id = $1 AND status = 'Pending Approval'
+       ORDER BY version_number DESC LIMIT 1`,
+      [id]
+    );
+    prdVersionId = vRows[0]?.id ?? null;
+  }
+
+  // Approve the version (if one exists)
+  if (prdVersionId) {
+    await pool.query(
+      `UPDATE prd_versions
+       SET status = 'Approved', approved_by_user_id = $1, approved_at = NOW()
+       WHERE id = $2`,
+      [user.id, prdVersionId]
+    );
+    await pool.query(
+      "UPDATE requests SET approved_prd_version_id = $1, updated_at = NOW() WHERE id = $2",
+      [prdVersionId, id]
     );
   }
 

@@ -175,7 +175,7 @@ export default function Home() {
 
       {/* Messages */}
       <main className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           {messages.map((message) => {
             const isUser = message.role === "user";
             const text = getTextFromMessage(message);
@@ -247,7 +247,7 @@ export default function Home() {
       <footer className="bg-white border-t border-gray-100 px-4 py-3 flex-shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
         <form
           onSubmit={handleSubmit}
-          className="max-w-3xl mx-auto flex items-end gap-3"
+          className="max-w-5xl mx-auto flex items-end gap-3"
         >
           <div className="flex-1">
             <textarea
@@ -275,7 +275,7 @@ export default function Home() {
             <Send size={16} />
           </button>
         </form>
-        <p className="max-w-3xl mx-auto mt-1.5 text-xs text-gray-400 text-center">
+        <p className="max-w-5xl mx-auto mt-1.5 text-xs text-gray-400 text-center">
           Product Intake asks questions until it has everything needed to write your requirements document.
         </p>
       </footer>

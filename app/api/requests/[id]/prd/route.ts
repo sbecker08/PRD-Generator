@@ -20,6 +20,20 @@ export async function GET(
     return new Response("Not found", { status: 404 });
   }
 
+  // Prefer prd_versions over raw messages
+  const { rows: versions } = await pool.query<{ content: string }>(
+    `SELECT content FROM prd_versions
+     WHERE request_id = $1
+     ORDER BY version_number DESC
+     LIMIT 1`,
+    [id]
+  );
+
+  if (versions.length > 0) {
+    return Response.json({ content: versions[0].content });
+  }
+
+  // Fallback: scan messages for legacy requests that pre-date prd_versions
   const { rows: messages } = await pool.query<{ content: string }>(
     "SELECT content FROM messages WHERE request_id = $1 AND role = 'assistant' ORDER BY created_at DESC",
     [id]

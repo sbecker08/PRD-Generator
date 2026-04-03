@@ -11,10 +11,10 @@ import { requireAuth } from "@/lib/auth-utils";
  * - If request is "PRD Updated": approves the updated version, transitions → "Epic Planning"
  */
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string; versionId: string }> }
 ) {
-  const user = await requireAuth();
+  const user = await requireAuth(req);
   if (user instanceof Response) return user;
 
   const { id, versionId } = await params;

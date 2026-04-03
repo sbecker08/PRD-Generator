@@ -6,7 +6,7 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string; crId: string }> }
 ) {
-  const user = await requireAuth();
+  const user = await requireAuth(req);
   if (user instanceof Response) return user;
 
   const { id, crId } = await params;

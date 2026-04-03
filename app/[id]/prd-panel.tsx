@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock,
   ChevronDown,
+  ChevronUp,
   Download,
   History,
   Sparkles,
@@ -70,6 +71,7 @@ export default function PrdPanel({
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const fetchVersions = useCallback(async () => {
     try {
@@ -147,7 +149,11 @@ export default function PrdPanel({
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mt-4">
       {/* Header */}
       <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+        >
+          {collapsed ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronUp size={14} className="text-gray-400" />}
           <FileText size={16} className="text-primary-600" />
           <h3 className="text-sm font-semibold text-gray-700">
             Product Requirements Document
@@ -157,10 +163,10 @@ export default function PrdPanel({
               ({versions.length} versions)
             </span>
           )}
-        </div>
+        </button>
 
         <div className="flex items-center gap-2">
-          {versions.length > 1 && (
+          {!collapsed && versions.length > 1 && (
             <button
               onClick={() => setShowHistory((s) => !s)}
               className="flex items-center gap-1.5 text-xs text-gray-500 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
@@ -169,13 +175,15 @@ export default function PrdPanel({
               History
             </button>
           )}
-          <button
-            onClick={() => downloadPrd(selectedVersion.content, selectedVersion.version_number)}
-            className="flex items-center gap-1.5 text-xs text-primary-600 px-2.5 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
-          >
-            <Download size={12} />
-            Download
-          </button>
+          {!collapsed && (
+            <button
+              onClick={() => downloadPrd(selectedVersion.content, selectedVersion.version_number)}
+              className="flex items-center gap-1.5 text-xs text-primary-600 px-2.5 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+            >
+              <Download size={12} />
+              Download
+            </button>
+          )}
           {canApprove && (
             <button
               onClick={() => handleApprove(selectedVersion.id)}
@@ -196,7 +204,7 @@ export default function PrdPanel({
       </div>
 
       {/* Version history sidebar (shown when toggled) */}
-      {showHistory && versions.length > 1 && (
+      {!collapsed && showHistory && versions.length > 1 && (
         <div className="border-b border-gray-100 bg-gray-50 px-5 py-3">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
             Version History
@@ -234,7 +242,7 @@ export default function PrdPanel({
       )}
 
       {/* Version selector (compact, when multiple but history hidden) */}
-      {versions.length > 1 && !showHistory && (
+      {!collapsed && versions.length > 1 && !showHistory && (
         <div className="px-5 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
           <span className="text-xs text-gray-400">Viewing:</span>
           <div className="relative">
@@ -272,7 +280,7 @@ export default function PrdPanel({
       )}
 
       {/* Change summary (shown for v2+) */}
-      {selectedVersion.change_summary && (
+      {!collapsed && selectedVersion.change_summary && (
         <div className="px-5 py-4 border-b border-sky-100 bg-sky-50">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles size={14} className="text-sky-600" />
@@ -289,16 +297,18 @@ export default function PrdPanel({
       )}
 
       {/* PRD content */}
-      <div className="px-5 py-5">
-        <div className="text-sm prose-chat">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {selectedVersion.content.replace(/<!-- CLASSIFICATION:.*?-->/g, "").trim()}
-          </ReactMarkdown>
+      {!collapsed && (
+        <div className="px-5 py-5">
+          <div className="text-sm prose-chat">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {selectedVersion.content.replace(/<!-- CLASSIFICATION:.*?-->/g, "").trim()}
+            </ReactMarkdown>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Bottom approve banner for pending versions */}
-      {canApprove && (
+      {!collapsed && canApprove && (
         <div className="px-5 py-3 bg-yellow-50 border-t border-yellow-100 flex items-center justify-between">
           <p className="text-xs text-yellow-700">
             {requestStatus === "PRD Updated"

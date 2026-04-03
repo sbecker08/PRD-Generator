@@ -6,7 +6,7 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireAuth();
+  const user = await requireAuth(req);
   if (user instanceof Response) return user;
 
   const { id } = await params;
@@ -24,7 +24,7 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireRole("IS Engineer");
+  const user = await requireRole("IS Engineer", req);
   if (user instanceof Response) return user;
 
   const { id } = await params;
@@ -64,7 +64,7 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireRole("IS Engineer");
+  const user = await requireRole("IS Engineer", req);
   if (user instanceof Response) return user;
 
   const { id } = await params;
@@ -108,7 +108,7 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireRole("IS Engineer");
+  const user = await requireRole("IS Engineer", req);
   if (user instanceof Response) return user;
 
   const { id } = await params;

@@ -9,10 +9,10 @@ import { requireRole } from "@/lib/auth-utils";
  * Requires the request to be in "IS Review" status (all questions answered).
  */
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireRole("IS Reviewer");
+  const user = await requireRole("IS Reviewer", req);
   if (user instanceof Response) return user;
 
   const { id } = await params;

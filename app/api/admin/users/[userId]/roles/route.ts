@@ -14,7 +14,7 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
-  const admin = await requireRole("Admin");
+  const admin = await requireRole("Admin", req);
   if (admin instanceof Response) return admin;
 
   const { userId } = await params;

@@ -14,7 +14,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string; epicId: string }> }
 ) {
-  const user = await requireRole("IS Engineer");
+  const user = await requireRole("IS Engineer", req);
   if (user instanceof Response) return user;
 
   const { id, epicId } = await params;

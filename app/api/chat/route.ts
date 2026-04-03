@@ -175,7 +175,7 @@ Generate the PRD in markdown with these sections:
 *This document was created with Product Intake. Review with stakeholders before development begins.*`;
 
 export async function POST(req: Request) {
-  const user = await requireAuth();
+  const user = await requireAuth(req);
   if (user instanceof Response) return user;
 
   const { messages, requestId }: { messages: UIMessage[]; requestId?: string } =
@@ -232,20 +232,26 @@ export async function POST(req: Request) {
       if (hasPrd) {
         try {
           await transitionStatus(requestId, "PRD Generated");
-          // Create prd_versions v1 if it doesn't already exist
-          const { rows: existing } = await pool.query(
-            "SELECT id FROM prd_versions WHERE request_id = $1 AND version_number = 1",
-            [requestId]
-          );
-          if (existing.length === 0) {
-            await pool.query(
-              `INSERT INTO prd_versions (request_id, version_number, content)
-               VALUES ($1, 1, $2)`,
-              [requestId, text]
-            );
-          }
         } catch {
-          // Already transitioned or invalid — ignore
+          // Already in PRD Generated or invalid transition — ignore
+        }
+        // Create or update prd_versions v1 (update if still pending approval so iterations are reflected)
+        const { rows: existing } = await pool.query(
+          "SELECT id, status FROM prd_versions WHERE request_id = $1 AND version_number = 1",
+          [requestId]
+        );
+        if (existing.length === 0) {
+          await pool.query(
+            `INSERT INTO prd_versions (request_id, version_number, content)
+             VALUES ($1, 1, $2)`,
+            [requestId, text]
+          );
+        } else if (existing[0].status === "Pending Approval") {
+          // Requester is still iterating — overwrite with the latest version
+          await pool.query(
+            `UPDATE prd_versions SET content = $1, generated_at = NOW() WHERE id = $2`,
+            [text, existing[0].id]
+          );
         }
       }
     },

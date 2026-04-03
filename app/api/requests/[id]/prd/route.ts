@@ -3,10 +3,10 @@ import pool from "@/lib/db";
 import { requireAuth } from "@/lib/auth-utils";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireAuth();
+  const user = await requireAuth(req);
   if (user instanceof Response) return user;
 
   const { id } = await params;

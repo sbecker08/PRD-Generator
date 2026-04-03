@@ -28,7 +28,7 @@ type RequestCycleRow = {
 };
 
 export async function GET(req: Request) {
-  const user = await requireAuth();
+  const user = await requireAuth(req);
   if (user instanceof Response) return user;
 
   const url = new URL(req.url);

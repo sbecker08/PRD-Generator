@@ -1,8 +1,8 @@
 import pool from "@/lib/db";
 import { requireRole } from "@/lib/auth-utils";
 
-export async function GET() {
-  const user = await requireRole("Admin");
+export async function GET(req: Request) {
+  const user = await requireRole("Admin", req);
   if (user instanceof Response) return user;
 
   const { rows } = await pool.query<{

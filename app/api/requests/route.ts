@@ -2,8 +2,8 @@ import { type NextRequest } from "next/server";
 import pool from "@/lib/db";
 import { requireAuth } from "@/lib/auth-utils";
 
-export async function GET() {
-  const user = await requireAuth();
+export async function GET(req: Request) {
+  const user = await requireAuth(req);
   if (user instanceof Response) return user;
 
   const { rows } = await pool.query<{
@@ -27,7 +27,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await requireAuth();
+  const user = await requireAuth(req);
   if (user instanceof Response) return user;
 
   const { id: providedId, title }: { id?: string; title: string } = await req.json();

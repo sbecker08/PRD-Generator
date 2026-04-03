@@ -111,14 +111,17 @@ export default function RequestDetailPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { data: session } = useSession();
 
-  // Determine if this conversation can be continued (only Draft status)
-  const canChat = requestData?.status === "Draft";
-
   // Role checks
   const userRoles = (session?.user as { roles?: string[] })?.roles ?? [];
   const isReviewer = userRoles.includes("IS Reviewer");
   const isEngineer = userRoles.includes("IS Engineer");
   const isRequester = session?.user?.id === requestData?.created_by_user_id;
+
+  // Determine if this conversation can be continued
+  // Allow Draft always, and PRD Generated if user is the requester (so they can iterate before approving)
+  const canChat =
+    requestData?.status === "Draft" ||
+    (requestData?.status === "PRD Generated" && isRequester);
 
   // Show PRD panel from PRD Generated onwards (dedicated versioned view)
   const showPrdPanel = requestData && [
@@ -383,7 +386,7 @@ export default function RequestDetailPage() {
           {/* PRD Panel — versioned view, shown from PRD Generated onwards */}
           {showPrdPanel && (
             <PrdPanel
-              key={prdPanelKey}
+              key={`prd-${prdPanelKey}`}
               requestId={id}
               requestStatus={requestData.status}
               isRequester={isRequester}
@@ -413,7 +416,7 @@ export default function RequestDetailPage() {
           {/* Epics Panel for Epic Planning and beyond */}
           {showEpicsPanel && (
             <EpicsPanel
-              key={epicsKey}
+              key={`epics-${epicsKey}`}
               requestId={id}
               requestStatus={requestData.status}
               isEngineer={isEngineer}
@@ -488,7 +491,9 @@ export default function RequestDetailPage() {
             </button>
           </form>
           <p className="max-w-5xl mx-auto mt-1.5 text-xs text-gray-400 text-center">
-            Continue your intake conversation to refine your requirements.
+            {requestData?.status === "PRD Generated"
+              ? "Continue refining your requirements — the PRD will update when you're done. Approve above when ready."
+              : "Continue your intake conversation to refine your requirements."}
           </p>
         </footer>
       )}

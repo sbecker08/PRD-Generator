@@ -4,10 +4,10 @@ import { requireAuth, requireRole, hasRole } from "@/lib/auth-utils";
 
 /** GET /api/requests/[id]/questions — list all questions for a request */
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireAuth();
+  const user = await requireAuth(req);
   if (user instanceof Response) return user;
 
   const { id } = await params;
@@ -31,7 +31,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireRole("IS Reviewer");
+  const user = await requireRole("IS Reviewer", req);
   if (user instanceof Response) return user;
 
   const { id } = await params;
@@ -73,7 +73,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireRole("IS Reviewer");
+  const user = await requireRole("IS Reviewer", req);
   if (user instanceof Response) return user;
 
   const { questionId }: { questionId: string } = await req.json();

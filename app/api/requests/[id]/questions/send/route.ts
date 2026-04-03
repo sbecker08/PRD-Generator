@@ -9,10 +9,10 @@ import { requireRole } from "@/lib/auth-utils";
  * Transitions status: Business Approved → IS Review (if first time) then IS Review → Q&A Sent
  */
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await requireRole("IS Reviewer");
+  const user = await requireRole("IS Reviewer", req);
   if (user instanceof Response) return user;
 
   const { id } = await params;

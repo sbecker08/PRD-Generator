@@ -3,8 +3,6 @@ import type { NextRequest } from "next/server";
 import { auth } from "./lib/auth";
 
 export async function proxy(request: NextRequest) {
-  const session = await auth();
-
   const { pathname } = request.nextUrl;
 
   // Allow auth-related routes and the login page through
@@ -16,6 +14,13 @@ export async function proxy(request: NextRequest) {
   ) {
     return NextResponse.next();
   }
+
+  // Allow API routes with a Bearer token through — the route handler validates the key
+  if (pathname.startsWith("/api/") && request.headers.get("authorization")?.startsWith("Bearer ")) {
+    return NextResponse.next();
+  }
+
+  const session = await auth();
 
   // Redirect unauthenticated users to login
   if (!session) {
